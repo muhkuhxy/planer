@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
    evolutions,
    "org.webjars" % "bootstrap" % "3.3.4",
    "org.webjars.npm" % "moment" % "2.11.1",
-   "org.mindrot" % "jbcrypt" % "0.3m"
+   "org.mindrot" % "jbcrypt" % "0.3m",
    "org.postgresql" % "postgresql" % "9.4-1201-jdbc41"
 )
 
