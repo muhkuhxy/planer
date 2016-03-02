@@ -1,0 +1,17 @@
+
+GET    /login         @controllers.AuthenticationController.loginPage
+POST   /login         @controllers.AuthenticationController.login
+GET    /logout        @controllers.AuthenticationController.logout
+
+GET    /              controllers.PlanerController.overview
+GET    /plan          controllers.PlanerController.overview
+
+POST   /plan          controllers.PlanerController.create
+GET    /plan/:id      controllers.PlanerController.show(id: Long)
+PUT    /plan/:id      controllers.PlanerController.save(id: Long)
+DELETE /plan/:id      controllers.PlanerController.remove(id: Long)
+
+GET    /assignees     controllers.AssigneeController.list
+PUT    /assignees     controllers.AssigneeController.save
+
+GET    /assets/*file  controllers.Assets.at(path="/public", file)

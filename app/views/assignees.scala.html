@@ -1,0 +1,82 @@
+@(assignees: List[Assignee])
+
+@import helper._
+
+<!DOCTYPE html>
+<html>
+<head>
+   <meta charset="utf-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width,initial-scale=1">
+   <title>helfer</title>
+   <link rel="stylesheet" href='@routes.Assets.at("stylesheets/style.css")'>
+</head>
+<body>
+   <div class="container">
+
+      <header class="row">
+         <div class="col-xs-12">
+            <h2>Freiwillige</h2>
+         </div>
+      </header>
+
+      <div class="row">
+         <div class="col-xs-12">
+         <table class="table table-condensed helpers">
+            <thead>
+               <tr>
+                  <th>Name</th>
+                  <th>Sicherheit</th>
+                  <th>Mikro</th>
+                  <th>Tonanlage</th>
+               </tr>
+            </thead>
+            <tbody>
+               @template(assignee: Assignee = Assignee("", Set())) = {
+               <tr class="helper">
+                  <td contenteditable>@assignee.name</td>
+                  @for(service <- List("sicherheit", "mikro", "tonanlage")) {
+                  <td>
+                     <input type="checkbox" data-service="@service"
+                        @if(assignee.services.contains(service)) {
+                        checked=""
+                        }>
+                  </td>
+                  }
+               </tr>
+               }
+               <template>
+                  @template()
+               </template>
+            @for(assignee <- assignees) {
+               @template(assignee)
+            }
+            </tbody>
+            <tfoot>
+               <tr>
+                  <td class="add-helper"><label>Hinzufügen <input type="text"></label>
+                     <button class="btn btn-default"><span class="glyphicon glyphicon-plus-sign"></span></button></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+               </tr>
+            </tfoot>
+         </table>
+         </div>
+      </div>
+
+      <div class="row save">
+         <div class="col-xs-12">
+         </div>
+         <div class="col-xs-12">
+            <button id="save" class="btn btn-primary" type="button" data-target="@routes.AssigneeController.save">Speichern</button>
+         </div>
+      </div>
+
+   </div>
+
+   <script src='@routes.Assets.at("main.js")' type="text/javascript"></script>
+   <script>app.assignees.init()</script>
+
+</body>
+</html>

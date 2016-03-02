@@ -1,0 +1,132 @@
+@(assignees: List[Assignee], plan: Plan)
+
+@import helper._
+@import java.time.format._
+@import java.time.temporal._
+@import java.util.Locale
+
+<!DOCTYPE html>
+<html>
+<head>
+   <meta charset="utf-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width,initial-scale=1">
+   <title>planer</title>
+   <script src='@routes.Assets.at("lib/moment/moment.js")' type="text/javascript"></script>
+   <link media="screen" rel="stylesheet" href='@routes.Assets.at("stylesheets/style.css")'>
+   <link media="print" rel="stylesheet" href='@routes.Assets.at("stylesheets/print.css")'>
+</head>
+<body>
+   <div class="container">
+
+      <header class="row">
+         <div class="col-xs-12">
+            <h2>@plan.name</h2>
+         </div>
+      </header>
+
+      <div class="row termine">
+         <table class="table table-condensed" data-id="@plan.id">
+            <thead>
+               <tr>
+                  <th>Datum</th>
+                  <th>Sicherheit</th>
+                  <th>Mikro</th>
+                  <th>Tonanlage</th>
+               </tr>
+            </thead>
+            <tbody>
+            @assignment(assignments: Option[List[String]], idx: Int) = {
+               @{
+                  assignments match {
+                     case Some(list) =>
+                        if(list.size > idx) list(idx)
+                        else ""
+                     case None => ""
+                  }
+               }
+            }
+
+            @defining(new DateTimeFormatterBuilder()
+                .appendText(ChronoField.DAY_OF_WEEK)
+                .appendLiteral(", ")
+                .append(DateTimeFormatter.ofPattern("dd.MM.YYYY"))
+                .toFormatter(new Locale("de"))) { df =>
+            @for(sched <- plan.parts) {
+               <tr data-unavailable='@sched.unavailable.mkString(sep=",")'>
+                  <td class="datum" rowspan="2">@sched.date.format(df)</td>
+                  <td class="sicherheit">@assignment(sched.assignments.get("sicherheit"), 0)</td>
+                  <td class=mikro>@assignment(sched.assignments.get("mikro"), 0)</td>
+                  <td class="tonanlage" rowspan="2">@assignment(sched.assignments.get("tonanlage"), 0)</td>
+               </tr>
+               <tr>
+                  <td class="sicherheit">@assignment(sched.assignments.get("sicherheit"), 1)</td>
+                  <td class="mikro">@assignment(sched.assignments.get("mikro"), 1)</td>
+               </tr>
+            }}
+            </tbody>
+         </table>
+      </div>
+
+      <div class="row planung">
+         <h2 class="col-xs-12">Plan für <span>???</span></h2>
+         @placeholder(name: String, slots: Int) = {
+         <div class="col-md-4 @name">
+            <h3>@name</h3>
+            @for(_ <- 1 to slots) {
+            <div class="platzhalter">
+               <div class="remove">
+                  <span class="glyphicon glyphicon-remove"></span>
+               </div>
+               <div class="slot"></div>
+            </div>
+            }
+         </div>
+         }
+         @placeholder("sicherheit", 2)
+         @placeholder("mikro", 2)
+         @placeholder("tonanlage", 1)
+      </div>
+
+      @timesAssigned(name: String) = {
+      @{
+         val assigned = for( part <- plan.parts;
+                             (_,list) <- part.assignments;
+                             assg <- list if assg == name) yield name
+         assigned.size
+      }}
+
+      <div class="row kandidaten">
+         <div class="col-xs-12 flex">
+            <h2>Helfer</h2>
+            <ul>
+            @for(assignee <- assignees) {
+               <li>
+                  <div draggable="true">@assignee.name
+                     <input class="pull-right" name="unavailable" value="" type="checkbox">
+                     <div class="dienste">
+                        <div class="counter pull-left">@timesAssigned(assignee.name)</div>
+                     @for(s <- assignee.services) {
+                        <span class="@s">@s(0)</span>
+                     }
+                     </div>
+                  </div>
+               </li>
+            }
+            <ul>
+            <div class="blocker">Datum auswählen</div>
+         </div>
+      </div>
+
+      <div class="row save">
+         <button id="save" class="btn btn-primary" type="button" data-target="@routes.PlanerController.save(plan.id)">Speichern</button>
+         <div class="save-ok hide">
+            <span class="glyphicon glyphicon-ok-circle"></span>
+         </div>
+      </div>
+
+   </div>
+   <script src='@routes.Assets.at("main.js")' type="text/javascript"></script>
+   <script>app.planer.init()</script>
+</body>
+</html>

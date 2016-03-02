@@ -1,0 +1,56 @@
+@(plans: List[Plan])
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <title>planer übersicht</title>
+   <link rel="stylesheet" href='@routes.Assets.at("stylesheets/style.css")'>
+   <script src='@routes.Assets.at("lib/moment/moment.js")' type="text/javascript"></script>
+</head>
+<body>
+   <div class="container">
+      <header class="row">
+         <div class="col-xs-12">
+            <h2>Übersicht</h2>
+         </div>
+      </header>
+
+      <ul class="plan-list">
+      @for(plan <- plans) {
+         <li>@plan.name
+            <a class="btn btn-info btn-sm" href="@routes.PlanerController.show(plan.id)">Bearbeiten</a>
+            <button class="plan-remove btn btn-warning btn-sm" data-target="@routes.PlanerController.remove(plan.id)">Löschen</button>
+         </li>
+      }
+      </ul>
+
+      <div class="row date-range">
+         <div class="col-xs-12">
+            <h2>Neuer Plan</h2>
+            <div class="form-inline">
+               <div class="form-group">
+                  <label>Von
+                     <input type="date" name="from" value="">
+                  </label>
+               </div>
+               <div class="form-group">
+                  <label>Bis
+                     <input type="date" name="to" value="">
+                  </label>
+               </div>
+            </div>
+            <button id="create" data-target="@routes.PlanerController.create" class="btn btn-primary" type="button" disabled>Anlegen</button>
+         </div>
+      </div>
+
+      <div class="row assignees">
+         <div class="col-xs-12">
+            <h2>Helfer</h2>
+            <a href="@routes.AssigneeController.list">Helfer pflegen</a>
+         </div>
+      </div>
+   </div>
+   <script src='@routes.Assets.at("main.js")' type="text/javascript"></script>
+   <script>app.overview.init()</script>
+</body>
+</html>
