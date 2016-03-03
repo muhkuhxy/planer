@@ -14,7 +14,7 @@ import scala.language.postfixOps
 import scala.language.implicitConversions
 
 trait Helper {
-  def indexByFirst[A](values: List[(A, A)]): Map[A, List[A]] =
+  def indexByFirst[A, B](values: List[(A, B)]): Map[A, List[B]] =
     values.groupBy(_._1).map({ case(k,v) =>
       k -> v.map(_._2)
     })
@@ -33,12 +33,12 @@ object DefaultAssigneeRepository extends AssigneeRepository with Helper {
   def getAssignees = DB.withConnection { implicit c =>
     val result = SQL"""
       select v.name as volunteer, s.name as service from volunteer v
-      join volunteer_service vs on v.id = vs.volunteer_id
-      join service s on s.id = vs.service_id
-    """.as(str("volunteer") ~ str("service") map (flatten) *)
+      left join volunteer_service vs on v.id = vs.volunteer_id
+      left join service s on s.id = vs.service_id
+    """.as(str("volunteer") ~ get[Option[String]]("service") map (flatten) *)
     val assignees = for {
       (name, services) <- indexByFirst(result)
-    } yield Assignee(name, services.toSet)
+    } yield Assignee(name, services.flatten.toSet)
     assignees.toList.sortBy(_.name)
   }
 
