@@ -38,7 +38,7 @@ class AuthenticationController @Inject() (val messagesApi: MessagesApi) extends 
   }
 
   def checkCredentials(user: String, password: String): Option[String] = DB.withConnection { implicit c =>
-    val maybePasswd = SQL"select password from user where username = $user"
+    val maybePasswd = SQL"select password from appuser where username = $user"
       .as(scalar[String].singleOpt)
     for {
       hashed <- maybePasswd if BCrypt.checkpw(password, hashed)

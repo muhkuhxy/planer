@@ -91,8 +91,8 @@ object DefaultPlanRepository extends PlanRepository with Helper {
 
   def find(id: Long) = DB.withConnection { implicit c =>
     val plan = SQL"select id, name from plan where id = $id".as(int("id") ~ str("name") map flatten single)
-    val schedulesResult = SQL"select id, when from schedule where plan_id = $id"
-      .as(int("id") ~ get[Date]("when") map flatten *)
+    val schedulesResult = SQL"select id, day from schedule where plan_id = $id"
+      .as(int("id") ~ get[Date]("day") map flatten *)
     val schedules = schedulesResult map { case (scheduleId, when) =>
       val unavailable = SQL"""
         select v.name from unavailable u
@@ -122,7 +122,7 @@ object DefaultPlanRepository extends PlanRepository with Helper {
     val volunteerIds = volunteersByName
     val serviceIds = servicesByName
     plan.parts.foreach { part =>
-      val scheduleId = SQL("select id from schedule where when = {date} and plan_id = {plan}")
+      val scheduleId = SQL("select id from schedule where day = {date} and plan_id = {plan}")
         .on('date -> toDate(part.date), 'plan -> plan.id)
         .as(int("id").single)
       val deleted = deleteScheduleRefs(scheduleId)
@@ -157,7 +157,7 @@ object DefaultPlanRepository extends PlanRepository with Helper {
     val dates = daysBetween(from, to.plusDays(7), Seq(DayOfWeek.FRIDAY, DayOfWeek.SUNDAY))
     dates.foreach { date =>
       val dbDate = toDate(date)
-      SQL"insert into schedule(plan_id, when) values ($planId, $dbDate)".executeInsert()
+      SQL"insert into schedule(plan_id, day) values ($planId, $dbDate)".executeInsert()
     }
     planId
   }

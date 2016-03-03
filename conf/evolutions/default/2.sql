@@ -1,37 +1,31 @@
 # --- !Ups
 
 create table plan (
-   id bigint(20) not null auto_increment,
+   id bigserial,
    name varchar(255) not null,
    primary key (id)
 );
 
 create table schedule (
-   id bigint(20) not null auto_increment,
-   when date not null,
-   plan_id bigint(20) not null,
-   primary key (id),
-   foreign key(plan_id) references plan(id)
+   id bigserial,
+   day date not null,
+   plan_id bigint references plan(id),
+   primary key (id)
 );
 
 create table unavailable (
-   schedule_id bigint(20) not null,
-   volunteer_id bigint(20) not null,
-   foreign key(volunteer_id) references volunteer(id),
-   foreign key(schedule_id) references schedule(id)
+   schedule_id bigint references schedule(id),
+   volunteer_id bigint references volunteer(id)
 );
 
 create table schedule_services (
-   volunteer_id bigint(20) not null,
-   service_id bigint(20) not null,
-   schedule_id bigint(20) not null,
-   foreign key(service_id) references service(id),
-   foreign key(volunteer_id) references volunteer(id),
-   foreign key(schedule_id) references schedule(id)
+   volunteer_id bigint references volunteer(id),
+   service_id bigint references service(id),
+   schedule_id bigint references schedule(id)
 );
 
-create table user (
-   id bigint(20) not null auto_increment,
+create table appuser (
+   id bigserial,
    username varchar(255) not null,
    password char(60) not null,
    primary key (id)
@@ -42,5 +36,5 @@ create table user (
 drop table plan;
 drop table schedule;
 drop table schedule_services;
-drop table user;
+drop table appuser;
 

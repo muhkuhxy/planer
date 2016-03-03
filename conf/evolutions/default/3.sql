@@ -1,6 +1,6 @@
 # --- !Ups
 
-create index schedule_when_idx on schedule(when);
+create index schedule_when_idx on schedule(day);
 create unique index volunteer_name_index on volunteer(name);
 
 # --- !Downs
