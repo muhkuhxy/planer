@@ -23,7 +23,11 @@ export function req(method, url, data) {
       }
       req.open(method, url);
       req.setRequestHeader('content-type', 'application/json');
-      req.send(JSON.stringify(data));
+      const json = JSON.stringify(data);
+      if(json.length > 1100) {
+         console.log('request may fail due to too much data!');
+      }
+      req.send(json);
    });
 
 }

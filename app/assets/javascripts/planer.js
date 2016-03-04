@@ -54,20 +54,26 @@ function init() {
     });
 }
 
+function getName(candidate) {
+   return $('.name', candidate).textContent;
+}
+
 function serializePlan() {
+   const names = $$('.kandidaten li > div .name').map(_ => _.textContent);
+   const lookup = _ => names.indexOf(_);
    let parts = $$('.termine tbody tr:nth-child(odd)').map(row => {
       let assignments = assignmentsFor(row);
       let {unavailable} = assignments;
       delete assignments.unavailable;
-      return {
-         date: parseDate($('td.datum', row).textContent.substr(5)).format('YYYY-MM-DD'),
-         assignments: assignments,
-         unavailable: unavailable
-      }
+      return [
+         parseDate($('td.datum', row).textContent.substr(5)).format('YYYY-MM-DD'),
+         dienste.map(s => assignments[s].map(lookup)),
+         unavailable.map(lookup)
+      ]
    });
    const id = parseInt($('.termine table').dataset.id, 10);
    const name = $('header h2').textContent;
-   const plan = [ id, name, parts ];
+   const plan = [ id, name, [names, parts] ];
    console.log(plan)
    return plan;
 }
@@ -93,7 +99,7 @@ function assign(bruder, platzhalter, count = true) {
          unassign(prev);
       }
    }
-   $('.slot', platzhalter).textContent = bruder.firstChild.textContent;
+   $('.slot', platzhalter).textContent = getName(bruder);
 }
 
 function updateCounter(bruder, val) {
@@ -126,7 +132,7 @@ function addToPlan(name, platzhalter) {
 
 function unavailable(bruder, remove) {
    const tr = $('.termine tr.info');
-   const name = bruder.firstChild.textContent.trim();
+   const name = getName(bruder);
    const set = getDataUnavailable(tr);
    if(remove) {
       set.delete(name);
@@ -270,7 +276,7 @@ function initDragAndDrop() {
       if(e.target.classList.contains('platzhalter') && classesOverlap(e.target.parentNode)) {
          e.target.style.backgroundColor = '';
          assign(dragged, e.target);
-         addToPlan(dragged.firstChild.textContent, e.target);
+         addToPlan(getName(dragged), e.target);
       }
    });
 
