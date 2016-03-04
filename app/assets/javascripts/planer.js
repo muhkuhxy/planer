@@ -67,7 +67,7 @@ function serializePlan() {
    });
    const id = parseInt($('.termine table').dataset.id, 10);
    const name = $('header h2').textContent;
-   const plan = {id, name, parts};
+   const plan = [ id, name, parts ];
    console.log(plan)
    return plan;
 }
