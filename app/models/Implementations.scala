@@ -104,6 +104,7 @@ object DefaultPlanRepository extends PlanRepository with Helper {
         join service s on s.id = ss.service_id
         join volunteer v on v.id = ss.volunteer_id
         where schedule_id = $scheduleId
+        order by ss.shift
       """.as(str("service") ~ str("volunteer") map flatten *)
       val assignments = indexByFirst(assigned)
       Schedule(when, unavailable, assignments)
@@ -133,9 +134,9 @@ object DefaultPlanRepository extends PlanRepository with Helper {
       }
       part.assignments.foreach { assignment =>
         val serviceId = serviceIds(assignment._1)
-        assignment._2 filter( _.nonEmpty ) foreach { name =>
+        assignment._2.zipWithIndex.filter( _._1.nonEmpty ) foreach { case (name, shift) =>
           val volunteerId = volunteerIds(name)
-          SQL"insert into schedule_services values ($volunteerId, $serviceId, $scheduleId)"
+          SQL"insert into schedule_services values ($volunteerId, $serviceId, $scheduleId, $shift)"
             .executeInsert()
         }
       }
