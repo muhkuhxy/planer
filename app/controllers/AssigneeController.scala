@@ -27,9 +27,13 @@ object AssigneeController extends Controller with Security {
         case (s, i) => i -> s.as[String]
     }).toMap
     def lookupService(id: JsValue): String = serviceMap(id.as[Int])
+    def parseEmail(em: String): Option[String] =
+      if(em.nonEmpty) Some(em)
+      else None
     body(1).as[JsArray].value.map(
       v => Assignee(v(0).as[String],
-        v(1).as[JsArray].value.map(lookupService(_)).toSet)
+        v(1).as[JsArray].value.map(lookupService(_)).toSet,
+        parseEmail(v(2).as[String]))
     ).toList
   }
 

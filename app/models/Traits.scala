@@ -2,7 +2,7 @@ package models
 
 import java.time.LocalDate
 
-case class Assignee(name: String, services: Set[String])
+case class Assignee(name: String, services: Set[String], email: Option[String] = None)
 case class Plan(id: Int, name: String, parts: List[Schedule])
 case class Schedule(date: LocalDate, unavailable: List[String], assignments: Map[String,List[String]])
 

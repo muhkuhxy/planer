@@ -21,15 +21,14 @@ function init() {
 }
 
 function serializeHelpers() {
-   const services = new Set();
-   const verbose = $$('.helper').map(row => {
+   const services = ['sicherheit', 'mikro', 'tonanlage'];
+   const volunteers = $$('.helper').map(row => {
       const myServices = $$('td input:checked', row).map(checkbox => checkbox.dataset.service);
-      myServices.forEach(s => services.add(s));
-      return {
-         name: $('td', row).textContent.trim(),
-         services: myServices
-      };
+      return [
+         $('td', row).textContent.trim(),
+         myServices.map(_ => services.indexOf(_)),
+         $('.email', row).textContent
+      ];
    });
-   const servicesArray = Array.from(services);
-   return [servicesArray,verbose.map(_ => [_.name, _.services.map(s => servicesArray.indexOf(s))])];
+   return [services, volunteers];
 }

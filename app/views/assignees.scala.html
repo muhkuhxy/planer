@@ -26,6 +26,7 @@
             <thead>
                <tr>
                   <th>Name</th>
+                  <th>Email</th>
                   <th>Sicherheit</th>
                   <th>Mikro</th>
                   <th>Tonanlage</th>
@@ -34,7 +35,8 @@
             <tbody>
                @template(assignee: Assignee = Assignee("", Set())) = {
                <tr class="helper">
-                  <td contenteditable>@assignee.name</td>
+                  <td>@assignee.name</td>
+                  <td class="email" contenteditable>@assignee.email.getOrElse("")</td>
                   @for(service <- List("sicherheit", "mikro", "tonanlage")) {
                   <td>
                      <input type="checkbox" data-service="@service"

@@ -32,13 +32,15 @@ object DefaultAssigneeRepository extends AssigneeRepository with Helper {
 
   def getAssignees = DB.withConnection { implicit c =>
     val result = SQL"""
-      select v.name as volunteer, s.name as service from volunteer v
+      select v.name as volunteer, s.name as service, v.email from volunteer v
       left join volunteer_service vs on v.id = vs.volunteer_id
       left join service s on s.id = vs.service_id
-    """.as(str("volunteer") ~ get[Option[String]]("service") map (flatten) *)
+    """.as(str("volunteer") ~
+      get[Option[String]]("service") ~
+      get[Option[String]]("email") map (flatten) *)
     val assignees = for {
-      (name, services) <- indexByFirst(result)
-    } yield Assignee(name, services.flatten.toSet)
+      (name, bla) <- result.groupBy(_._1)
+    } yield Assignee(name, bla.map(_._2).flatten.toSet, bla.head._3)
     assignees.toList.sortBy(_.name)
   }
 
@@ -48,10 +50,12 @@ object DefaultAssigneeRepository extends AssigneeRepository with Helper {
     sealed trait AssigneeOp {
       def execute()
     }
-    case class UpdateServices(as: Assignee) extends AssigneeOp {
+    case class Update(as: Assignee) extends AssigneeOp {
       val asId = volunteerIds(as.name)
       def execute {
-        Logger.info(s"updating services $as")
+        Logger.info(s"updating services $as with id $asId")
+        val result = SQL("update volunteer set email = {email} where id = {id}")
+          .on("email" -> as.email, "id" -> asId).executeUpdate()
         SQL"delete from volunteer_service where volunteer_id = $asId".executeUpdate()
         for(service <- as.services)
           SQL"insert into volunteer_service values ($asId, ${serviceIds(service)})".executeInsert()
@@ -69,10 +73,11 @@ object DefaultAssigneeRepository extends AssigneeRepository with Helper {
       import scala.collection.mutable.ListBuffer
       val byName = old.map( as => as.name -> as ).toMap
       var ops = ListBuffer.empty[AssigneeOp]
-      now.foreach { case as @ Assignee(name, services) =>
+      now.foreach { case as @ Assignee(name, services, email) =>
         if(byName.contains(name)) {
-          if(byName(name).services != services) {
-            ops += UpdateServices(as)
+          val existing = byName(name)
+          if(existing.services != services || existing.email != email) {
+            ops += Update(as)
           }
         } else {
           ops += Add(as)
@@ -109,7 +114,6 @@ object DefaultPlanRepository extends PlanRepository with Helper {
       val assignments = indexByFirst(assigned)
       Schedule(when, unavailable, assignments)
     }
-    Logger.debug(s"$schedules")
     Plan(plan._1, plan._2, schedules)
   }
 
