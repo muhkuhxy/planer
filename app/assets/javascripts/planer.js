@@ -32,10 +32,20 @@ function init() {
 
    let saveButton = $('#save');
    saveButton.addEventListener('click', ev => {
+      $('.working').classList.remove('hide');
+      $('.save-ok').classList.add('hide');
+      $('.error').classList.add('hide');
       req('PUT', saveButton.dataset.target, serializePlan()).then(result => {
+         $('.working').classList.add('hide');
          if(result.status === 200) {
             $('.save-ok').classList.remove('hide');
          }
+         else {
+            $('.error').classList.remove('hide');
+         }
+      }, err => {
+         $('.working').classList.add('hide');
+         $('.error').classList.remove('hide');
       });
    });
 

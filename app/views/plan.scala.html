@@ -124,10 +124,16 @@
          </div>
       </div>
 
-      <div class="row save">
+      <div class="save">
          <button id="save" class="btn btn-primary" type="button" data-target="@routes.PlanerController.save(plan.id)">Speichern</button>
+         <div class="working hide">
+            <span class="glyphicon glyphicon-repeat"></span>
+         </div>
          <div class="save-ok hide">
             <span class="glyphicon glyphicon-ok-circle"></span>
+         </div>
+         <div class="error hide">
+            <span class="glyphicon glyphicon-remove-circle"></span>
          </div>
          <a class="btn btn-default" href='mailto:@assignees.map(_.email).flatten.mkString(",")'>E-Mail</a>
       </div>

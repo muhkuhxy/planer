@@ -154,11 +154,42 @@
 
 .save {
    padding: 3rem;
-   text-align: center;
+   display: flex;
+   justify-content: center;
+
+   .btn, div {
+      margin-right: .3em;
+   }
+
+   .glyphicon {
+      font-size: 1.5em;
+      margin-top: 0.25em;
+   }
 
    .save-ok {
       display: inline-block;
       color: @brand-success;
    }
+
+   .error {
+      display: inline-block;
+      color: red;
+   }
+
+   .working {
+      display: inline-block;
+      animation: 2s linear 0s infinite normal turnit;
+   }
+
+   @keyframes turnit {
+      from {
+         transform: rotate(0deg);
+      }
+
+      to {
+         transform: rotate(360deg);
+      }
+   }
+
 }
 
