@@ -1,6 +1,7 @@
 @(assignees: List[Assignee], plan: Plan)
 
 @import helper._
+@import java.time.LocalDate
 @import java.time.format._
 @import java.time.temporal._
 @import java.util.Locale
@@ -66,6 +67,10 @@
             }}
             </tbody>
          </table>
+
+         <div class="printing-date">Stand vom @{
+            LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.YYYY", new Locale("de")))
+            }</div>
       </div>
 
       <div class="row planung">
