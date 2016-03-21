@@ -4,6 +4,9 @@ POST   /login         @controllers.AuthenticationController.login
 GET    /logout        @controllers.AuthenticationController.logout
 
 GET    /              controllers.PlanerController.overview
+
+GET    /territory     controllers.TerritoryController.overview
+
 GET    /plan          controllers.PlanerController.overview
 
 POST   /plan          controllers.PlanerController.create

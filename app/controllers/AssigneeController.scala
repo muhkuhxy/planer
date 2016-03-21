@@ -11,7 +11,7 @@ object AssigneeController extends Controller with Security {
   val assignees: AssigneeRepository = DefaultAssigneeRepository
 
   def list = Authenticated {
-    Ok(views.html.assignees(assignees.getAssignees))
+    Ok(views.html.smt.assignees(assignees.getAssignees))
   }
 
   implicit val assigneeReads = Json.reads[Assignee]

@@ -21,11 +21,11 @@ object PlanerController extends Controller with Security {
   implicit val RangeRead = Json.reads[Range]
 
   def overview = Authenticated {
-    Ok(views.html.overview(plans.list))
+    Ok(views.html.smt.overview(plans.list))
   }
 
   def show(id: Long) = Authenticated {
-    Ok(views.html.plan(assigness.getAssignees, plans.find(id)))
+    Ok(views.html.smt.plan(assigness.getAssignees, plans.find(id)))
   }
 
   def create = Authenticated(BodyParsers.parse.json) { implicit request =>

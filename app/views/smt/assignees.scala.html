@@ -1,5 +1,6 @@
 @(assignees: List[Assignee])
 
+@import tags._
 @import helper._
 
 <!DOCTYPE html>
@@ -12,6 +13,8 @@
    <link rel="stylesheet" href='@routes.Assets.at("stylesheets/style.css")'>
 </head>
 <body>
+   @nav()
+
    <div class="container">
 
       <header class="row">
