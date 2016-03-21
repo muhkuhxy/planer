@@ -1,6 +1,7 @@
-@(plans: List[Plan])
-
+@import models.smt._
 @import tags._
+
+@(plans: List[Plan])
 
 <!DOCTYPE html>
 <html lang="en">
@@ -25,8 +26,8 @@
       <ul class="plan-list">
       @for(plan <- plans) {
          <li>@plan.name
-            <a class="btn btn-info btn-sm" href="@routes.PlanerController.show(plan.id)">Bearbeiten</a>
-            <button class="plan-remove btn btn-warning btn-sm" data-target="@routes.PlanerController.remove(plan.id)">Löschen</button>
+            <a class="btn btn-info btn-sm" href="@controllers.smt.routes.PlanController.show(plan.id)">Bearbeiten</a>
+            <button class="plan-remove btn btn-warning btn-sm" data-target="@controllers.smt.routes.PlanController.remove(plan.id)">Löschen</button>
          </li>
       }
       </ul>
@@ -46,14 +47,14 @@
                   </label>
                </div>
             </div>
-            <button id="create" data-target="@routes.PlanerController.create" class="btn btn-primary" type="button" disabled>Anlegen</button>
+            <button id="create" data-target="@controllers.smt.routes.PlanController.create" class="btn btn-primary" type="button" disabled>Anlegen</button>
          </div>
       </div>
 
       <div class="row assignees">
          <div class="col-xs-12">
             <h2>Helfer</h2>
-            <a href="@routes.AssigneeController.list">Helfer pflegen</a>
+            <a href="@controllers.smt.routes.AssigneeController.list">Helfer pflegen</a>
          </div>
       </div>
    </div>

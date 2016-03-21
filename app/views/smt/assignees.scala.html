@@ -1,7 +1,8 @@
-@(assignees: List[Assignee])
-
+@import models.smt._
 @import tags._
 @import helper._
+
+@(assignees: List[Assignee])
 
 <!DOCTYPE html>
 <html>
@@ -74,7 +75,7 @@
          <div class="col-xs-12">
          </div>
          <div class="col-xs-12">
-            <button id="save" class="btn btn-primary" type="button" data-target="@routes.AssigneeController.save">Speichern</button>
+            <button id="save" class="btn btn-primary" type="button" data-target="@controllers.smt.routes.AssigneeController.save">Speichern</button>
          </div>
       </div>
 

@@ -1,13 +1,14 @@
-package controllers
+package controllers.smt
 
+import controllers.Security
 import java.time.LocalDate
 import play.api.mvc._
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
-import models._
+import models.smt._
 
-object PlanerController extends Controller with Security {
+object PlanController extends Controller with Security {
 
   val assigness: AssigneeRepository = DefaultAssigneeRepository
   val plans: PlanRepository = DefaultPlanRepository
@@ -38,7 +39,7 @@ object PlanerController extends Controller with Security {
       },
       range => {
         val id = plans.create(range.from, range.to)
-        Ok(routes.PlanerController.show(id).absoluteURL)
+        Ok(routes.PlanController.show(id).absoluteURL)
       }
     )
   }

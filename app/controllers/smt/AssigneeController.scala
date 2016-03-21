@@ -1,10 +1,11 @@
-package controllers
+package controllers.smt
 
+import controllers.Security
 import play.api.mvc._
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
-import models._
+import models.smt._
 
 object AssigneeController extends Controller with Security {
 

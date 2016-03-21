@@ -3,18 +3,17 @@ GET    /login         @controllers.AuthenticationController.loginPage
 POST   /login         @controllers.AuthenticationController.login
 GET    /logout        @controllers.AuthenticationController.logout
 
-GET    /              controllers.PlanerController.overview
+GET    /              controllers.territory.TerritoryController.overview
 
-GET    /territory     controllers.TerritoryController.overview
+GET    /territory     controllers.territory.TerritoryController.overview
 
-GET    /plan          controllers.PlanerController.overview
+GET    /plan          controllers.smt.PlanController.overview
+POST   /plan          controllers.smt.PlanController.create
+GET    /plan/:id      controllers.smt.PlanController.show(id: Long)
+PUT    /plan/:id      controllers.smt.PlanController.save(id: Long)
+DELETE /plan/:id      controllers.smt.PlanController.remove(id: Long)
 
-POST   /plan          controllers.PlanerController.create
-GET    /plan/:id      controllers.PlanerController.show(id: Long)
-PUT    /plan/:id      controllers.PlanerController.save(id: Long)
-DELETE /plan/:id      controllers.PlanerController.remove(id: Long)
-
-GET    /assignees     controllers.AssigneeController.list
-PUT    /assignees     controllers.AssigneeController.save
+GET    /assignees     controllers.smt.AssigneeController.list
+PUT    /assignees     controllers.smt.AssigneeController.save
 
 GET    /assets/*file  controllers.Assets.at(path="/public", file)

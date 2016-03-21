@@ -49,7 +49,7 @@ class AuthenticationController @Inject() (val messagesApi: MessagesApi) extends 
     val loginData = request.body
     checkCredentials(loginData.name, loginData.password) match {
       case Some(user) =>
-        Redirect(routes.PlanerController.overview)
+        Redirect(smt.routes.PlanController.overview)
           .withSession(request.session + ("username" -> loginData.name))
       case None =>
         Redirect(routes.AuthenticationController.loginPage)

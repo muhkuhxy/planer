@@ -1,11 +1,12 @@
-@(assignees: List[Assignee], plan: Plan)
-
+@import models.smt._
 @import tags._
 @import helper._
 @import java.time.LocalDate
 @import java.time.format._
 @import java.time.temporal._
 @import java.util.Locale
+
+@(assignees: List[Assignee], plan: Plan)
 
 <!DOCTYPE html>
 <html>
@@ -129,7 +130,7 @@
       </div>
 
       <div class="save">
-         <button id="save" class="btn btn-primary" type="button" data-target="@routes.PlanerController.save(plan.id)">Speichern</button>
+         <button id="save" class="btn btn-primary" type="button" data-target="@controllers.smt.routes.PlanController.save(plan.id)">Speichern</button>
          <div class="working hide">
             <span class="glyphicon glyphicon-repeat"></span>
          </div>
