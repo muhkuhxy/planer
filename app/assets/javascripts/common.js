@@ -3,9 +3,9 @@ export const $ = (q, p = document) => p.querySelector(q);
 export const $$ = (q, p = document) => Array.from(p.querySelectorAll(q));
 
 export function parseDate(date) {
-   const validDates = ['DD.MM.YYYY', 'YYYY-MM-DD'].map(f =>
+   const [maybeValid] = ['DD.MM.YYYY', 'YYYY-MM-DD'].map(f =>
          moment(date, f)).filter(d => d.isValid());
-   return validDates.length ? validDates[0] : undefined;
+   return maybeValid;
 }
 
 export function req(method, url, data) {

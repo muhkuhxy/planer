@@ -15,6 +15,6 @@ object TerritoryController extends Controller with Security {
   def localDateDescOrdering: Ordering[LocalDate] = localDateOrdering.reverse
 
   def overview = Authenticated {
-    Ok(views.html.territory.inout(Seq(), Seq()))
+    Ok(views.html.territory.inout(Seq(), Seq(), Seq()))
   }
 }

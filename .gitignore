@@ -7,3 +7,5 @@ dist
 .cache
 .history
 *.db
+.idea
+.vagrant
