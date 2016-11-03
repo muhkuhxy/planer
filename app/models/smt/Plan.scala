@@ -100,22 +100,16 @@ object DefaultPlanRepository extends PlanRepository with Helper {
     planId
   }
 
-  def daysBetween(from: LocalDate, to: LocalDate, weekdays: Seq[DayOfWeek]) = {
-    val adjusters = weekdays map { TemporalAdjusters.next(_) }
-    val infIt = new Iterator[TemporalAdjuster] {
-      val hasNext = true
-      var count = -1
-      def next = {
-        count = (count + 1) % adjusters.size
-        adjusters(count)
-      }
+  def daysBetween(from: LocalDate, to: LocalDate, weekDays: Seq[DayOfWeek]): Stream[LocalDate] = {
+    val adjusters = weekDays map {
+      TemporalAdjusters.next
     }
-    var date = from
-    val dates = infIt.map(adj => {
-      date = date.`with`(adj)
-      date
-    }).takeWhile(_.isBefore(to))
-    dates
+    lazy val loopingAdjusters: Stream[TemporalAdjuster] = adjusters.toStream #::: loopingAdjusters
+
+    loopingAdjusters.scanLeft(from)((date, adjuster) => {
+      date.`with`(adjuster)
+    }).dropWhile(d => !weekDays.contains(d.getDayOfWeek))
+      .takeWhile(_.isBefore(to))
   }
 
   def toDate(local: LocalDate): java.util.Date =
