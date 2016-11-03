@@ -1,0 +1,1 @@
+insert into appuser (username, password) values ('tlo', '$2a$10$h341UD2nBKQuDCzm6LKbieDHev5A9EGYazSHlnqAD4FbE2dJ5sjD.');
