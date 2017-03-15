@@ -2,13 +2,15 @@ package models.smt
 
 import anorm._
 import anorm.SqlParser._
+import com.google.inject.ImplementedBy
 import java.sql.Connection
 import java.time._
 import java.time.format._
 import java.time.temporal._
+import javax.inject._
 import java.util.Date
 import play.api.Play.current
-import play.api.db.DB
+import play.api.db._
 import play.api.Logger
 import scala.language.postfixOps
 import scala.language.implicitConversions
@@ -16,6 +18,7 @@ import scala.language.implicitConversions
 case class Plan(id: Int, name: String, parts: List[Schedule])
 case class Schedule(date: LocalDate, unavailable: List[String], assignments: Map[String,List[String]])
 
+@ImplementedBy(classOf[DefaultPlanRepository])
 trait PlanRepository {
   def save(plan: Plan)
   def list: List[Plan]
@@ -24,10 +27,10 @@ trait PlanRepository {
   def create(from: LocalDate, to: LocalDate): Long
 }
 
-object DefaultPlanRepository extends PlanRepository with Helper {
+class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with Helper {
   val dateFormat = DateTimeFormatter.ofPattern("dd.MM.YYYY")
 
-  def find(id: Long) = DB.withConnection { implicit c =>
+  def find(id: Long) = db.withConnection { implicit c =>
     val plan = SQL"select id, name from plan where id = $id".as(int("id") ~ str("name") map flatten single)
     val schedulesResult = SQL"select id, day from schedule where plan_id = $id"
       .as(int("id") ~ get[Date]("day") map flatten *)
@@ -50,13 +53,13 @@ object DefaultPlanRepository extends PlanRepository with Helper {
     Plan(plan._1, plan._2, schedules)
   }
 
-  def list: List[Plan] = DB.withConnection { implicit c =>
+  def list: List[Plan] = db.withConnection { implicit c =>
     SQL"select id, name from plan order by id desc".as(int("id") ~ str("name") map flatten *) map { n =>
       Plan(n._1, n._2, List())
     }
   }
 
-  def save(plan: Plan) = DB.withConnection { implicit c =>
+  def save(plan: Plan) = db.withConnection { implicit c =>
     val volunteerIds = volunteersByName
     val serviceIds = servicesByName
     plan.parts.foreach { part =>
@@ -80,7 +83,7 @@ object DefaultPlanRepository extends PlanRepository with Helper {
     }
   }
 
-  def remove(id: Long) = DB.withConnection { implicit c =>
+  def remove(id: Long) = db.withConnection { implicit c =>
     val scheduleIds = SQL"select id from schedule where plan_id = $id".as(multiIds)
     scheduleIds.foreach(deleteScheduleRefs(_))
     val count = SQL"delete from schedule where id in (${scheduleIds})".executeUpdate()
@@ -88,7 +91,7 @@ object DefaultPlanRepository extends PlanRepository with Helper {
     SQL"delete from plan where id = $id".executeUpdate
   }
 
-  def create(from: LocalDate, to: LocalDate) = DB.withConnection { implicit c =>
+  def create(from: LocalDate, to: LocalDate) = db.withConnection { implicit c =>
     val planId = SQL("insert into plan(name) values ({name})")
       .on('name -> s"Plan vom ${from.format(dateFormat)} bis ${to.format(dateFormat)}")
       .executeInsert().get

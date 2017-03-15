@@ -2,27 +2,30 @@ package models.smt
 
 import anorm._
 import anorm.SqlParser._
+import com.google.inject.ImplementedBy
 import java.sql.Connection
 import java.time._
 import java.time.format._
 import java.time.temporal._
+import javax.inject._
 import java.util.Date
 import play.api.Play.current
-import play.api.db.DB
+import play.api.db._
 import play.api.Logger
 import scala.language.postfixOps
 import scala.language.implicitConversions
 
 case class Assignee(name: String, services: Set[String], email: Option[String] = None)
 
+@ImplementedBy(classOf[DefaultAssigneeRepository])
 trait AssigneeRepository {
   def getAssignees: List[Assignee]
   def save(helpers: List[Assignee])
 }
 
-object DefaultAssigneeRepository extends AssigneeRepository with Helper {
+class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeRepository with Helper {
 
-  def getAssignees = DB.withConnection { implicit c =>
+  def getAssignees = db.withConnection { implicit c =>
     val result = SQL"""
       select v.name as volunteer, s.name as service, v.email from volunteer v
       left join volunteer_service vs on v.id = vs.volunteer_id
@@ -36,7 +39,7 @@ object DefaultAssigneeRepository extends AssigneeRepository with Helper {
     assignees.toList.sortBy(_.name)
   }
 
-  def save(helpers: List[Assignee]) = DB.withConnection { implicit c =>
+  def save(helpers: List[Assignee]) = db.withConnection { implicit c =>
     val serviceIds = servicesByName
     val volunteerIds = volunteersByName
     sealed trait AssigneeOp {
