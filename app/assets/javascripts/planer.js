@@ -209,7 +209,7 @@ function applyAssignments(assigned) {
    const brueder = $$('.kandidaten li > div');
    assigned.unavailable.forEach(un => {
       const b = findBruderByName(un, brueder);
-      b.children[0].checked = true;
+      $('[name=unavailable]', b).checked = true;
       b.classList.add('disabled');
    });
    dienste.forEach(dienst => {
