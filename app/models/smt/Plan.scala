@@ -38,13 +38,13 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
       val unavailable = SQL"""
         select v.name from unavailable u
         join volunteer v on v.id = u.volunteer_id
-        where schedule_id = $scheduleId
+        where schedule_id = $scheduleId and v.active
       """.as(str(1) *)
       val assigned = SQL"""
         select s.name service, v.name volunteer from schedule_services ss
         join service s on s.id = ss.service_id
         join volunteer v on v.id = ss.volunteer_id
-        where schedule_id = $scheduleId
+        where schedule_id = $scheduleId and v.active
         order by ss.shift
       """.as(str("service") ~ str("volunteer") map flatten *)
       val assignments = indexByFirst(assigned)
