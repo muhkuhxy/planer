@@ -39,12 +39,11 @@ class AuthenticationController @Inject()(db: Database) (val messagesApi: Message
   }
 
   def checkCredentials(user: String, password: String): Option[String] = db.withConnection { implicit c =>
-//    val maybePasswd = SQL"select password from appuser where username = $user"
-//      .as(scalar[String].singleOpt)
-//    for {
-//      hashed <- maybePasswd if BCrypt.checkpw(password, hashed)
-//    } yield user
-    Some("tlo")
+    val maybePasswd = SQL"select password from appuser where username = $user"
+      .as(scalar[String].singleOpt)
+    for {
+      hashed <- maybePasswd if BCrypt.checkpw(password, hashed)
+    } yield user
   }
 
   def login = Action(BodyParsers.parse.form(loginForm)) { implicit request =>
