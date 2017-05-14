@@ -16,7 +16,8 @@ import org.mindrot.jbcrypt.BCrypt
 
 trait Security {
   def getUserFromRequest(req: RequestHeader): Option[String] = req.session.get("username")
-  object Authenticated extends AuthenticatedBuilder(req => getUserFromRequest(req))
+  def onUnauthorized(req: RequestHeader) = Redirect(routes.AuthenticationController.loginPage)
+  object Authenticated extends AuthenticatedBuilder(getUserFromRequest, onUnauthorized)
 }
 
 object AuthenticationController {

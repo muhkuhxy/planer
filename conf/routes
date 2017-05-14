@@ -3,7 +3,7 @@ GET    /login         @controllers.AuthenticationController.loginPage
 POST   /login         @controllers.AuthenticationController.login
 GET    /logout        @controllers.AuthenticationController.logout
 
-GET    /              controllers.territory.TerritoryController.overview
+GET    /              controllers.smt.PlanController.overview
 
 GET    /territory     controllers.territory.TerritoryController.overview
 
