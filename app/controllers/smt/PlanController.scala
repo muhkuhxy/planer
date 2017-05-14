@@ -2,16 +2,14 @@ package controllers.smt
 
 import controllers.Security
 import java.time.LocalDate
+import javax.inject._
 import play.api.mvc._
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import models.smt._
 
-object PlanController extends Controller with Security {
-
-  val assigness: AssigneeRepository = DefaultAssigneeRepository
-  val plans: PlanRepository = DefaultPlanRepository
+class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanRepository) extends Controller with Security {
 
   case class Range(from: LocalDate, to: LocalDate)
   implicit val ldRead = new Reads[LocalDate] {

@@ -10,7 +10,7 @@ import play.api.Play.current
 import play.api.mvc.Security._
 import play.api.data._
 import play.api.data.Forms._
-import play.api.db.DB
+import play.api.db.Database
 import javax.inject._
 import org.mindrot.jbcrypt.BCrypt
 
@@ -31,19 +31,20 @@ object AuthenticationController {
 
 }
 
-class AuthenticationController @Inject() (val messagesApi: MessagesApi) extends Controller with Security with I18nSupport {
+class AuthenticationController @Inject()(db: Database) (val messagesApi: MessagesApi) extends Controller with Security with I18nSupport {
   import AuthenticationController._
 
   def loginPage = Action { implicit request =>
     Ok(views.html.login(loginForm))
   }
 
-  def checkCredentials(user: String, password: String): Option[String] = DB.withConnection { implicit c =>
-    val maybePasswd = SQL"select password from appuser where username = $user"
-      .as(scalar[String].singleOpt)
-    for {
-      hashed <- maybePasswd if BCrypt.checkpw(password, hashed)
-    } yield user
+  def checkCredentials(user: String, password: String): Option[String] = db.withConnection { implicit c =>
+//    val maybePasswd = SQL"select password from appuser where username = $user"
+//      .as(scalar[String].singleOpt)
+//    for {
+//      hashed <- maybePasswd if BCrypt.checkpw(password, hashed)
+//    } yield user
+    Some("tlo")
   }
 
   def login = Action(BodyParsers.parse.form(loginForm)) { implicit request =>

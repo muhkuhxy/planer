@@ -9,7 +9,7 @@ import play.api.libs.functional.syntax._
 import models.territory._
 import models.territory.vm._
 
-object TerritoryController extends Controller with Security {
+class TerritoryController extends Controller with Security {
 
   implicit def localDateOrdering: Ordering[LocalDate] = Ordering.fromLessThan(_ isBefore _)
   def localDateDescOrdering: Ordering[LocalDate] = localDateOrdering.reverse

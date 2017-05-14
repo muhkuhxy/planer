@@ -6,10 +6,9 @@ import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import models.smt._
+import javax.inject._
 
-object AssigneeController extends Controller with Security {
-
-  val assignees: AssigneeRepository = DefaultAssigneeRepository
+class AssigneeController @Inject()(assignees: AssigneeRepository) extends Controller with Security {
 
   def list = Authenticated {
     Ok(views.html.smt.assignees(assignees.getAssignees))
