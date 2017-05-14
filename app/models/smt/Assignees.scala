@@ -30,6 +30,7 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
       select v.name as volunteer, s.name as service, v.email from volunteer v
       left join volunteer_service vs on v.id = vs.volunteer_id
       left join service s on s.id = vs.service_id
+      where v.active
     """.as(str("volunteer") ~
       get[Option[String]]("service") ~
       get[Option[String]]("email") map (flatten) *)
@@ -64,13 +65,25 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
           SQL"insert into volunteer_service values ($asId, ${serviceIds(service)})".executeInsert()
       }
     }
+    case class Remove(as: Assignee) extends AssigneeOp {
+      def execute {
+        Logger.info(s"removing $as")
+        val geloeschtId = volunteerIds("geloescht")
+        val asId = volunteerIds(as.name)
+        SQL"update volunteer_service set volunteer_id = $geloeschtId where volunteer_id = $asId".executeUpdate()
+        SQL"update schedule_services set volunteer_id = $geloeschtId where volunteer_id = $asId".executeUpdate()
+        SQL"update unavailable set volunteer_id = $geloeschtId where volunteer_id = $asId".executeUpdate()
+        val result = SQL"delete from volunteer where id = $asId".executeUpdate()
+        Logger.debug(s"$result geloescht")
+      }
+    }
     def calculateDifferences(old: List[Assignee], now: List[Assignee]): Seq[AssigneeOp] = {
       import scala.collection.mutable.ListBuffer
-      val byName = old.map( as => as.name -> as ).toMap
+      val oldByName = old.map( as => as.name -> as ).toMap
       var ops = ListBuffer.empty[AssigneeOp]
       now.foreach { case as @ Assignee(name, services, email) =>
-        if(byName.contains(name)) {
-          val existing = byName(name)
+        if(oldByName.contains(name)) {
+          val existing = oldByName(name)
           if(existing.services != services || existing.email != email) {
             ops += Update(as)
           }
@@ -78,6 +91,16 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
           ops += Add(as)
         }
       }
+      val nowNames = now.map( as => as.name ).toSet
+      Logger.debug(s"neue leute $nowNames")
+      Logger.debug(s"alte leute $oldByName")
+      val removed = old.filter { case Assignee(name, _, _) =>
+        !( nowNames contains name )
+      } map { case as @ Assignee(_, _, _) =>
+        Remove(as)
+      }
+      Logger.debug(s"$removed")
+      ops ++= removed
       ops
     }
     val old = getAssignees

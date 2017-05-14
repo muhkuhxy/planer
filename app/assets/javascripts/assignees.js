@@ -1,3 +1,5 @@
+'use strict';
+
 import {$, $$, req} from './common.js';
 
 window.app = (window.app || {});
@@ -15,9 +17,29 @@ function init() {
       input.value = '';
    });
 
+   $$('.remove').forEach(el => el.addEventListener('click', ev => {
+      findParent(ev.target, 'helper').remove();
+   }));
+
    $('#save').addEventListener('click', ev => {
       req('PUT', ev.target.dataset.target, serializeHelpers()).then(response => console.log(response));
    });
+}
+
+function findParent(elem, cls) {
+   while (elem.parentNode) {
+      let parent = elem.parentNode;
+      if (hasClass(parent, cls)) {
+         return parent;
+      } else {
+         elem = parent;
+      }
+   }
+}
+
+function hasClass(elem, cls) {
+   let clsList = elem.classList;
+   return clsList && clsList.contains(cls);
 }
 
 function serializeHelpers() {
