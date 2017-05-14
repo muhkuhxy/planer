@@ -92,15 +92,11 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
         }
       }
       val nowNames = now.map( as => as.name ).toSet
-      Logger.debug(s"neue leute $nowNames")
-      Logger.debug(s"alte leute $oldByName")
-      val removed = old.filter { case Assignee(name, _, _) =>
+      ops ++= old.filter { case Assignee(name, _, _) =>
         !( nowNames contains name )
       } map { case as @ Assignee(_, _, _) =>
         Remove(as)
       }
-      Logger.debug(s"$removed")
-      ops ++= removed
       ops
     }
     val old = getAssignees

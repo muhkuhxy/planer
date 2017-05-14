@@ -17,12 +17,28 @@ function init() {
       input.value = '';
    });
 
-   $$('.remove').forEach(el => el.addEventListener('click', ev => {
-      findParent(ev.target, 'helper').remove();
-   }));
+   document.addEventListener('click', ev => {
+      if (hasClass(ev.target, 'remove')) {
+         findParent(ev.target, 'helper').remove();
+      }
+   });
 
    $('#save').addEventListener('click', ev => {
-      req('PUT', ev.target.dataset.target, serializeHelpers()).then(response => console.log(response));
+      $('.working').classList.remove('hide');
+      $('.save-ok').classList.add('hide');
+      $('.error').classList.add('hide');
+      req('PUT', ev.target.dataset.target, serializeHelpers()).then(result => {
+         $('.working').classList.add('hide');
+         if(result.status === 200) {
+            $('.save-ok').classList.remove('hide');
+         }
+         else {
+            $('.error').classList.remove('hide');
+         }
+      }, err => {
+         $('.working').classList.add('hide');
+         $('.error').classList.remove('hide');
+      });
    });
 }
 
