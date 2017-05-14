@@ -29,7 +29,7 @@ object DefaultPlanRepository extends PlanRepository with Helper {
 
   def find(id: Long) = DB.withConnection { implicit c =>
     val plan = SQL"select id, name from plan where id = $id".as(int("id") ~ str("name") map flatten single)
-    val schedulesResult = SQL"select id, day from schedule where plan_id = $id"
+    val schedulesResult = SQL"select id, day from schedule where plan_id = $id order by day"
       .as(int("id") ~ get[Date]("day") map flatten *)
     val schedules = schedulesResult map { case (scheduleId, when) =>
       val unavailable = SQL"""
