@@ -1,0 +1,33 @@
+
+- Liste der verfügbaren Gebiete anzeigen
+   Nummer, Nicht bearbeitet seit, Anzahl Haushalte, Straßen (Übersicht)
+   -> Link auf Details
+
+- Details eines Gebiets anzeigen
+   Straßen genau: Hausnummer, Anzahl Haushalte, Verbote, Karte
+   Historie (aufklappbar)
+   -> Aktionen je nach Zustand
+      Ausgeben, zurück geben, zeitweise ausgeben, Besondere Aktion erfassen?
+
+- Ein Gebiet ausgeben
+   An wen, Datum (heute vorbelegt)
+
+- Ein Gebiet zurück geben
+   Wer, Datum (heute vorbelegt)
+
+- Ein Gebiet zeitweise ausgeben
+   Kein Eintrag in der Historie, aber Zustand nicht verfügbar bzw. zeitweise ausgegeben
+   Wer, Datum (heute ...), Grund?
+
+- Besondere Aktionen zu einem oder mehrere Gebieten erfassen
+   Einladungsaktion, Arabisch
+   Als suchbare Tags? In Übersicht oder bei Details änderbar?
+
+- Liste der nicht verfügbaren Gebiete anzeigen
+   Nummer, Anzahl Haushalte, Straßen (Übersicht)
+   Wem ausgegeben, wann ausgegeben
+
+- Gebiet ändern
+
+- Neues Gebiet erfassen
+

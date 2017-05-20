@@ -6,6 +6,7 @@ GET    /logout        @controllers.AuthenticationController.logout
 GET    /              controllers.smt.PlanController.overview
 
 GET    /territory     controllers.territory.TerritoryController.overview
+GET    /territory/:id controllers.territory.TerritoryController.show(id: String)
 
 GET    /plan          controllers.smt.PlanController.overview
 POST   /plan          controllers.smt.PlanController.create

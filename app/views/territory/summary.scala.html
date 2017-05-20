@@ -1,4 +1,4 @@
-@import models.territory.vm._
+@import models.territory.summary._
 @import tags._
 
 @(available: Seq[AvailableTerritory], issued: Seq[IssuedTerritory], friends: Seq[String])
@@ -47,8 +47,8 @@
                <tbody>
                   @for(t <- available) {
                   <tr class='@{
-                     if(t.monthsNotWorked > 6) "bg-danger"
-                     else if(t.monthsNotWorked > 3) "bg-warning"
+                     if(t.monthsNotWorked.exists(_ > 6)) "bg-danger"
+                     else if(t.monthsNotWorked.exists(_ > 3)) "bg-warning"
                      }'>
                      <td>@t.id</td>
                      <td>@t.monthsNotWorked</td>

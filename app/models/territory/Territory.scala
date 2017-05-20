@@ -1,55 +1,72 @@
 package models.territory
 
 import java.time.{LocalDate, Period}
+import com.google.inject.ImplementedBy
+import summary._
 
-case class Territory(id: String, households: Int, streets: Seq[String], log: Seq[LogEntry]) {
-  def isAvailable = log.isEmpty || log.head.isInstanceOf[Return]
-  def lastWorked: Option[LocalDate] = log.find(_.isWorked).map(_.date)
+@ImplementedBy(classOf[InMemoryRepo])
+trait TerritoryRepository {
+  def find(id: String): Option[Territory]
+  def all: Seq[Territory]
+  def summary: (Seq[AvailableTerritory], Seq[IssuedTerritory]) = {
+    val (available, issued) = all.partition(_.available)
+    (available map { t =>
+        AvailableTerritory(t.id, t.log.lastOption.map(_.date), t.streets.map(_.households).sum, t.streets.map(_.name))
+        }, issued map { t =>
+        IssuedTerritory(t.id, t.log.last.date, t.log.last.who.get)
+      })
+  }
 }
 
-abstract class LogEntry {
-  def id: Int
-  def date: LocalDate
-  def territory: String
-  def isWorked: Boolean
-}
-case class Issue(id: Int, date: LocalDate, territory: String, friend: Friend) extends LogEntry {
-  val isWorked = false
-}
-case class Return(id: Int, date: LocalDate, territory: String) extends LogEntry {
-  val isWorked = true
-}
-case class Finished(id: Int, date: LocalDate, territory: String) extends LogEntry {
-  val isWorked = true
+class InMemoryRepo extends TerritoryRepository {
+  def find(id: String) = None
+  def all = List()
 }
 
-case class Friend(name: String, groupId: Int)
+case class LogEntry(date: LocalDate, kind: LogEntry.EntryType, who: Option[Friend], note: String)
 
-package vm {
+object LogEntry {
+  trait EntryType {
+    def name: String
+  }
+  case object Issued extends EntryType { def name = "Issued" }
+  case object Returned extends EntryType { def name = "Returned" }
+  case object Worked extends EntryType { def name = "Worked" }
 
-  case class AvailableTerritory(id: String, monthsNotWorked: BigDecimal, lastWorked: LocalDate, households: Int, streets: Seq[String])
+  def issued(to: Friend)(note: String) = LogEntry(LocalDate.now(), LogEntry.Issued, Some(to), note)
+}
 
-  case object AvailableTerritory {
-    def monthsNotWorked(lastWorked: LocalDate) = {
+case class Territory(id: String, streets: Seq[Street], bans: Seq[Ban], log: Seq[LogEntry]) {
+  def issue(to: Friend) = {
+    require(available)
+    LogEntry.issued(to)_
+  }
+
+  def issuedTo: Option[Friend] = for {
+    last <- log.lastOption
+    if last.kind == LogEntry.Issued
+    who <- last.who
+  } yield who
+
+  def issued = issuedTo.nonEmpty
+
+  def available = log.lastOption.map(_.kind == LogEntry.Returned).getOrElse(true)
+}
+
+case class Street(name: String, range: (String, String), households: Int)
+case class Ban(address: Address, date: LocalDate)
+case class Address(name: String, address: String)
+
+case class Friend(name: String, group: Int)
+
+package summary {
+  case class AvailableTerritory(id: String, lastWorked: Option[LocalDate], households: Int, streets: Seq[String]) {
+    def monthsNotWorked = lastWorked.map { lastWorked =>
       val p = Period.between(lastWorked, LocalDate.now())
       val months = p.getYears * 12 + p.getMonths + p.getDays / 30.0
-      java.math.BigDecimal.valueOf(months).setScale(1, java.math.RoundingMode.HALF_UP)
-    }
-    def apply(t: Territory): AvailableTerritory = {
-      val lastWorked = t.lastWorked.get
-      AvailableTerritory(t.id, monthsNotWorked(lastWorked), lastWorked, t.households, t.streets)
+      BigDecimal(java.math.BigDecimal.valueOf(months).setScale(1, java.math.RoundingMode.HALF_UP))
     }
   }
-
-  case class IssuedTerritory(id: String, issued: LocalDate, friend: String)
-
-  case object IssuedTerritory {
-    def findIssued(log: Seq[LogEntry]): Issue = log.find(_.isInstanceOf[Issue]).get.asInstanceOf[Issue]
-
-    def apply(t: Territory): IssuedTerritory = {
-      val issued = findIssued(t.log)
-      IssuedTerritory(t.id, issued.date, issued.friend.name)
-    }
-  }
-
+  case class IssuedTerritory(id: String, issued: LocalDate, friend: Friend)
 }
+
