@@ -1,7 +1,8 @@
+@import models.territory._
 @import models.territory.summary._
 @import tags._
 
-@(available: Seq[AvailableTerritory], issued: Seq[IssuedTerritory], friends: Seq[String])
+@(available: Seq[AvailableTerritory], issued: Seq[IssuedTerritory], friends: Seq[Friend])
 
 <!DOCTYPE html>
 <html lang="en">
@@ -33,34 +34,36 @@
          <div class="col-xs-12">
 
             <h3>Im Kasten</h3>
-            <table class="table table-condensed available">
+            <table class="table available">
                <thead>
                   <tr>
                      <th>Gebietsnummer</th>
+                     <th>Letzte Bearbeitung</th>
                      <th>Monate nicht bearbeitet</th>
-                     <th>letzte Bearbeitung</th>
                      <th>Anzahl Haushalte</th>
-                     <th>Ort, Straßen</th>
+                     <th>Ort</th>
+                     <th>Straßen</th>
                      <th></th>
                   </tr>
                </thead>
                <tbody>
                   @for(t <- available) {
                   <tr class='@{
-                     if(t.monthsNotWorked.exists(_ > 6)) "bg-danger"
-                     else if(t.monthsNotWorked.exists(_ > 3)) "bg-warning"
+                     if(t.monthsNotWorked.exists(_ > 9)) "bg-danger"
+                     else if(t.monthsNotWorked.exists(_ > 6)) "bg-warning"
                      }'>
                      <td>@t.id</td>
-                     <td>@t.monthsNotWorked</td>
                      <td>@t.lastWorked</td>
+                     <td>@t.monthsNotWorked</td>
                      <td>@t.households</td>
-                     <td>@t.streets</td>
+                     <td>@t.city</td>
+                     <td>@t.streets.mkString(", ")</td>
                      <td class="action">
                         <button class="btn btn-default issue" data-id="@t.id">Ausgeben
                            <span class="glyphicon glyphicon-upload"></span>
                         </button>
                         <div class="friend-selection">
-                           <input type="text" placeholder="Namen eingeben">
+                           <input type="text" placeholder="Namen eingeben" list="friends">
                            <button class="btn btn-primary ok">Ok</button>
                            <ul class="list-group"></ul>
                         </div>
@@ -71,12 +74,15 @@
             </table>
 
             <h3>Ausgegeben</h3>
-            <table class="table table-condensed issued">
+            <table class="table issued">
                <thead>
                   <tr>
                      <th>Gebietsnummer</th>
                      <th>Datum Ausgabe</th>
+                     <th>Monate ausgegeben</th>
                      <th>Name</th>
+                     <th>Ort</th>
+                     <th>Straßen</th>
                      <th></th>
                   </tr>
                </thead>
@@ -85,7 +91,10 @@
                   <tr>
                      <td>@t.id</td>
                      <td>@t.issued</td>
-                     <td>@t.friend</td>
+                     <td>@t.monthsIssued</td>
+                     <td>@t.friend.name</td>
+                     <td>@t.city</td>
+                     <td>@t.streets.mkString(", ")</td>
                      <td class="action">
                         <button class="btn btn-default return">Zurück
                            <span class="glyphicon glyphicon-download"></span>

@@ -27,7 +27,9 @@ libraryDependencies ++= Seq(
    "org.webjars.npm" % "moment" % "2.11.1",
    "org.mindrot" % "jbcrypt" % "0.3m",
    "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
-   "org.webjars.npm" % "rx" % "4.1.0"
+   "org.webjars.npm" % "rx" % "4.1.0",
+   "org.webjars.npm" % "jquery" % "3.2.1"
+   // "org.webjars.bower" % "list.js" % "1.5.0"
 )
 
 
