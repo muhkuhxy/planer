@@ -11,16 +11,16 @@ case class Territory(id: String, streets: Seq[Street], bans: Seq[Ban], log: Seq[
   }
 
   def issuedTo: Option[Friend] = for {
-    last <- log.lastOption
-    if last.kind == LogEntry.Issued
-    who <- last.who
+    head <- log.headOption
+    if head.kind == LogEntry.Issued
+    who <- head.who
   } yield who
 
   def issued = issuedTo.nonEmpty
 
   // kann sein, dass ein ding weder issued noch available ist?
 
-  def available = log.lastOption.map(_.kind == LogEntry.Returned).getOrElse(true)
+  def available = log.headOption.map(_.kind == LogEntry.Returned).getOrElse(true)
 }
 
 case class Street(name: String, range: (String, String), households: Int)
@@ -64,10 +64,10 @@ trait TerritoryRepository {
   def summary: (Seq[AvailableTerritory], Seq[IssuedTerritory]) = {
     val (available, issued) = all.partition(_.available)
     (available map { t =>
-        AvailableTerritory(t.id, t.log.lastOption.map(_.date), t.streets.map(_.households).sum, t.streets.map(_.name), t.city)
+        AvailableTerritory(t.id, t.log.headOption.map(_.date), t.streets.map(_.households).sum, t.streets.map(_.name), t.city)
       } sorted(availableOrdering),
       issued map { t =>
-        IssuedTerritory(t.id, t.log.last.date, t.log.last.who.get, t.streets.map(_.name), t.city)
+        IssuedTerritory(t.id, t.log.head.date, t.log.head.who.get, t.streets.map(_.name), t.city)
     })
   }
   def addLog(log: LogEntry)
@@ -80,8 +80,8 @@ class InMemoryRepo extends TerritoryRepository {
       List(Street("kirchrather", ("1a", "15"), 12), Street("kirchrather", ("2", "20"), 10)),
       bans = List(),
       log = List(
-        LogEntry(LocalDate.of(2017, 1, 3), LogEntry.Issued, Some(Friend("reinhard", 1)), "")
-      , LogEntry(LocalDate.of(2017, 4, 30), LogEntry.Returned, Some(Friend("irmgard", 1)), "")
+        LogEntry(LocalDate.of(2017, 4, 30), LogEntry.Returned, Some(Friend("irmgard", 1)), "")
+      , LogEntry(LocalDate.of(2017, 1, 3), LogEntry.Issued, Some(Friend("reinhard", 1)), "")
       ),
       "Würselen"
     )
@@ -95,16 +95,18 @@ class InMemoryRepo extends TerritoryRepository {
       List(Street("aachener str.", ("127", "159"), 102), Street("dürener", ("2", "20"), 10)),
       bans = List(),
       log = List(
-        LogEntry(LocalDate.of(2016, 1, 3), LogEntry.Issued, Some(Friend("reinhard", 1)), "")
+        LogEntry(LocalDate.of(2016, 11, 7), LogEntry.Returned, Some(Friend("reinhard", 1)), "")
       , LogEntry(LocalDate.of(2016, 6, 30), LogEntry.Worked, Some(Friend("irmgard", 1)), "")
-      , LogEntry(LocalDate.of(2016, 11, 7), LogEntry.Returned, Some(Friend("reinhard", 1)), "")
+      , LogEntry(LocalDate.of(2016, 1, 3), LogEntry.Issued, Some(Friend("reinhard", 1)), "")
       ),
       "Würselen"
     )
   , Territory("1110",
       List(Street("plitscharder", ("15", "15"), 2), Street("buxtehude str.", ("2", "20"), 10)),
       bans = List(Ban("loeffen", "kirchrather 46", LocalDate.now())),
-      log = List(LogEntry.issued(Friend("timon", 1))("test")),
+      log = List(
+        LogEntry.issued(Friend("timon", 1))("test")
+      ),
       "Kohlscheid"
     )
   )
