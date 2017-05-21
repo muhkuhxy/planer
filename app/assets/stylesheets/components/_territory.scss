@@ -1,0 +1,28 @@
+
+.territory {
+   &.summary {
+      table {
+         table-layout: fixed;
+      }
+      .id { width: 10em; }
+      .unworked, .working { width: 15em; }
+      .households, .friend { width: 10em; }
+      .city { width: 10em; }
+      .streets {
+         > div {
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            width: available;
+         }
+      }
+      .actions {
+         text-align: right;
+         width: 5em;
+      }
+   }
+
+   &.single {
+
+   }
+}

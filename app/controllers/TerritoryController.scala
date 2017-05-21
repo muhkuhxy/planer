@@ -16,12 +16,12 @@ class TerritoryController @Inject()(territories: TerritoryRepository, friends: F
 
   def overview = Authenticated {
     val (available, issued) = territories.summary
-    Ok(views.html.territory.summary(available, issued, friends.all))
+    Ok(views.html.territory.summary(available, issued))
   }
 
   def show(id: String) = Authenticated {
     territories.find(id) match {
-      case Some(territory) => Ok(views.html.territory.single(territory))
+      case Some(territory) => Ok(views.html.territory.single(territory, friends.all))
       case None => NotFound(s"Gebiet $id nicht gefunden")
     }
   }

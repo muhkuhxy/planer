@@ -12,15 +12,13 @@ case class Territory(id: String, streets: Seq[Street], bans: Seq[Ban], log: Seq[
 
   def issuedTo: Option[Friend] = for {
     head <- log.headOption
-    if head.kind == LogEntry.Issued
+    if head.kind.isInstanceOf[LogEntry.IssuedType]
     who <- head.who
   } yield who
 
-  def issued = issuedTo.nonEmpty
+  def available = log.headOption.map(_.kind.available).getOrElse(true)
 
-  // kann sein, dass ein ding weder issued noch available ist?
-
-  def available = log.headOption.map(_.kind == LogEntry.Returned).getOrElse(true)
+  def state = log.headOption.map(_.kind.resultingState).getOrElse("Taufrisch")
 }
 
 case class Street(name: String, range: (String, String), households: Int)
@@ -30,10 +28,24 @@ case class LogEntry(date: LocalDate, kind: LogEntry.EntryType, who: Option[Frien
 object LogEntry {
   trait EntryType {
     def name: String
+    def resultingState: String
+    def available: Boolean
   }
-  case object Issued extends EntryType { def name = "Issued" }
-  case object Returned extends EntryType { def name = "Returned" }
-  case object Worked extends EntryType { def name = "Worked" }
+  trait IssuedType extends EntryType {
+    def resultingState = "Ausgegeben"
+    def available = false
+  }
+  case object Issued extends IssuedType {
+    def name = "Issued"
+  }
+  case object Worked extends IssuedType {
+    def name = "Worked"
+  }
+  case object Returned extends EntryType {
+    def name = "Returned"
+    def resultingState = "Im Kasten"
+    def available = true
+  }
 
   def issued(to: Friend)(note: String) = LogEntry(LocalDate.now(), LogEntry.Issued, Some(to), note)
 }
@@ -74,7 +86,7 @@ trait TerritoryRepository {
 }
 
 class InMemoryRepo extends TerritoryRepository {
-  def find(id: String) = None
+  def find(id: String) = all.filter(_.id == id).headOption
   def all = List(
     Territory("7120",
       List(Street("kirchrather", ("1a", "15"), 12), Street("kirchrather", ("2", "20"), 10)),

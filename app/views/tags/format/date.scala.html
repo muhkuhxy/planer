@@ -1,0 +1,4 @@
+@import java.time._
+@import java.time.format._
+@import java.util.Locale
+@(d: LocalDate)@defining(DateTimeFormatter.ofPattern("dd.MM.YYYY").withLocale(Locale.GERMAN)) { df => @df.format(d) }

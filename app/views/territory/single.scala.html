@@ -1,7 +1,7 @@
 @import models.territory.Territory
-@import tags._
+@import models.territory.Friend
 
-@(t: Territory)
+@(t: Territory, friends: Seq[Friend])
 
 <!DOCTYPE html>
 <html lang="en">
@@ -10,9 +10,63 @@
    <title>Gebiete</title>
    <link rel="stylesheet" href='@routes.Assets.at("stylesheets/style.css")'>
 </head>
-<body class="territory">
+<body class="territory single">
 
-   @nav()
+   @tags.nav()
+
+   <datalist id="friends">
+      @for(name <- friends) {
+      <option value="@name">
+      }
+   </datalist>
+
+   <div class="container-fluid">
+      <h1>Gebiet Nr. @t.id <small>@t.city</small></h1>
+
+      <h2>Aktionen <small>@t.state</small></h2>
+      @if(t.available) {
+         <button class="btn btn-default">Ausgeben</button>
+         <button class="btn btn-default">Temporär Ausgeben</button>
+      } else {
+         <button class="btn btn-default">Bearbeitet</button>
+         <button class="btn btn-default">Zurück</button>
+         <button class="btn btn-default">Unbearbeitet Zurück</button>
+      }
+
+      <h2>Straßen</h2>
+      <table class="table table-hover">
+         <thead>
+            <tr>
+               <th>Straße</th>
+               <th>Hausnummern</th>
+               <th>Familien</th>
+            </tr>
+         </thead>
+         <tfoot>
+            <tr>
+               <td></td>
+               <td></td>
+               <td>@t.streets.map(_.households).sum gesamt</td>
+            </tr>
+         </tfoot>
+         <tbody>
+            @for(s <- t.streets) {
+            <tr>
+               <td>@s.name</td>
+               <td>@tags.format.range(s.range)</td>
+               <td>@s.households</td>
+            </tr>
+            }
+         </tbody>
+      </table>
+
+      <h2>Nicht wieder vorsprechen</h2>
+
+      <h2>Karte</h2>
+
+      <h2>Historie</h2>
+
+   </div>
 
    <script src='@routes.Assets.at("main.js")' type="text/javascript"></script>
 </body>
