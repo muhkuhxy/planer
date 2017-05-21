@@ -20,7 +20,7 @@
       }
    </datalist>
 
-   <div class="container-fluid">
+   <div class="container">
       <h1>Gebiet Nr. @t.id <small>@t.city</small></h1>
 
       <h2>Aktionen <small>@t.state</small></h2>
@@ -28,8 +28,8 @@
          <button class="btn btn-default">Ausgeben</button>
          <button class="btn btn-default">Temporär Ausgeben</button>
       } else {
+         <button class="btn btn-default">Zurückgeben</button>
          <button class="btn btn-default">Bearbeitet</button>
-         <button class="btn btn-default">Zurück</button>
          <button class="btn btn-default">Unbearbeitet Zurück</button>
       }
 
@@ -64,7 +64,27 @@
 
       <h2>Karte</h2>
 
-      <h2>Historie</h2>
+      <section class="log">
+         <h2>Historie</h2>
+         <table class="table table-hover">
+            <thead>
+               <tr>
+                  <th>Datum</th>
+                  <th>Aktion</th>
+                  <th>Wer</th>
+               </tr>
+            </thead>
+            <tbody>
+               @for(entry <- t.log.reverse) {
+               <tr class="@if(entry.kind.available){available}">
+                  <td>@tags.format.date(entry.date)</td>
+                  <td>@entry.kind.description</td>
+                  <td>@entry.who.map(_.name)</td>
+               </tr>
+               }
+            </tbody>
+         </table>
+      </section>
 
    </div>
 

@@ -7,7 +7,12 @@ import summary._
 case class Territory(id: String, streets: Seq[Street], bans: Seq[Ban], log: Seq[LogEntry], city: String) {
   def issue(to: Friend) = {
     require(available)
-    LogEntry.issued(to)_
+    LogEntry.issued(to)
+  }
+
+  def `return`(from: Friend) = {
+    require(issued)
+    LogEntry.returned(from)
   }
 
   def issuedTo: Option[Friend] = for {
@@ -18,36 +23,48 @@ case class Territory(id: String, streets: Seq[Street], bans: Seq[Ban], log: Seq[
 
   def available = log.headOption.map(_.kind.available).getOrElse(true)
 
+  def issued = !available
+
   def state = log.headOption.map(_.kind.resultingState).getOrElse("Taufrisch")
 }
 
 case class Street(name: String, range: (String, String), households: Int)
 case class Ban(name: String, address: String, date: LocalDate)
-case class LogEntry(date: LocalDate, kind: LogEntry.EntryType, who: Option[Friend], note: String)
+case class LogEntry(date: LocalDate, kind: LogEntry.EntryType, who: Option[Friend])
 
 object LogEntry {
   trait EntryType {
-    def name: String
+    val name: String
     def resultingState: String
     def available: Boolean
+    def description: String
   }
   trait IssuedType extends EntryType {
     def resultingState = "Ausgegeben"
     def available = false
   }
   case object Issued extends IssuedType {
-    def name = "Issued"
+    val name = "Issued"
+    def description = "Ausgegeben"
   }
   case object Worked extends IssuedType {
-    def name = "Worked"
+    val name = "Worked"
+    def description = "Bearbeitet"
   }
   case object Returned extends EntryType {
-    def name = "Returned"
+    val name = "Returned"
     def resultingState = "Im Kasten"
     def available = true
+    def description = "Zurück"
   }
 
-  def issued(to: Friend)(note: String) = LogEntry(LocalDate.now(), LogEntry.Issued, Some(to), note)
+  def issued(to: Friend, date: LocalDate = LocalDate.now()) = LogEntry(date, LogEntry.Issued, Some(to))
+  def returned(from: Friend, date: LocalDate = LocalDate.now()) = LogEntry(date, LogEntry.Returned, Some(from))
+  def fromName(name: String) = name match {
+    case Issued.name => Issued
+    case Worked.name => Worked
+    case Returned.name => Returned
+  }
 }
 
 package summary {
@@ -92,10 +109,10 @@ class InMemoryRepo extends TerritoryRepository {
       List(Street("kirchrather", ("1a", "15"), 12), Street("kirchrather", ("2", "20"), 10)),
       bans = List(),
       log = List(
-        LogEntry(LocalDate.of(2017, 4, 30), LogEntry.Returned, Some(Friend("irmgard", 1)), "")
-      , LogEntry(LocalDate.of(2017, 1, 3), LogEntry.Issued, Some(Friend("reinhard", 1)), "")
+        LogEntry(LocalDate.of(2017, 4, 30), LogEntry.Returned, Some(Friend("irmgard", 1)))
+      , LogEntry(LocalDate.of(2017, 1, 3), LogEntry.Issued, Some(Friend("reinhard", 1)))
       ),
-      "Würselen"
+      "Niederbardenberg"
     )
   , Territory("2130",
       List(Street("aachener str.", ("127", "159"), 102), Street("dürener", ("2", "20"), 10)),
@@ -107,9 +124,9 @@ class InMemoryRepo extends TerritoryRepository {
       List(Street("aachener str.", ("127", "159"), 102), Street("dürener", ("2", "20"), 10)),
       bans = List(),
       log = List(
-        LogEntry(LocalDate.of(2016, 11, 7), LogEntry.Returned, Some(Friend("reinhard", 1)), "")
-      , LogEntry(LocalDate.of(2016, 6, 30), LogEntry.Worked, Some(Friend("irmgard", 1)), "")
-      , LogEntry(LocalDate.of(2016, 1, 3), LogEntry.Issued, Some(Friend("reinhard", 1)), "")
+        LogEntry(LocalDate.of(2016, 11, 7), LogEntry.Returned, Some(Friend("reinhard", 1)))
+      , LogEntry(LocalDate.of(2016, 6, 30), LogEntry.Worked, Some(Friend("irmgard", 1)))
+      , LogEntry(LocalDate.of(2016, 1, 3), LogEntry.Issued, Some(Friend("reinhard", 1)))
       ),
       "Würselen"
     )
@@ -117,7 +134,9 @@ class InMemoryRepo extends TerritoryRepository {
       List(Street("plitscharder", ("15", "15"), 2), Street("buxtehude str.", ("2", "20"), 10)),
       bans = List(Ban("loeffen", "kirchrather 46", LocalDate.now())),
       log = List(
-        LogEntry.issued(Friend("timon", 1))("test")
+        LogEntry(LocalDate.of(2016, 6, 30), LogEntry.Issued, Some(Friend("sascha", 1)))
+      , LogEntry(LocalDate.of(2016, 11, 7), LogEntry.Returned, Some(Friend("timon", 1)))
+      , LogEntry(LocalDate.of(2016, 1, 3), LogEntry.Issued, Some(Friend("timon", 1)))
       ),
       "Kohlscheid"
     )

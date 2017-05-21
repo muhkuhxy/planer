@@ -3,18 +3,18 @@
    &.summary {
       table {
          table-layout: fixed;
-      }
-      .id { width: 10em; }
-      .unworked, .working { width: 15em; }
-      .households, .friend { width: 10em; }
-      .city { width: 10em; }
-      .streets {
-         > div {
-            text-overflow: ellipsis;
-            overflow: hidden;
-            white-space: nowrap;
-            width: available;
+         td, th {
+            vertical-align: middle;
          }
+      }
+      .id { width: 6em; }
+      .unworked, .working { width: 8em; }
+      .households, .friend { width: 7em; }
+      .city { width: 10em; }
+      .streets:not(.expand) {
+         text-overflow: ellipsis;
+         overflow: hidden;
+         white-space: nowrap;
       }
       .actions {
          text-align: right;
@@ -23,6 +23,11 @@
    }
 
    &.single {
+      .log {
+         tbody tr.iteration {
+            background-color: gray;
+         }
+      }
 
    }
 }

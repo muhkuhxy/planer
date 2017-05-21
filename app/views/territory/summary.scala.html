@@ -15,7 +15,7 @@
 
    @nav()
 
-   <div class="container-fluid">
+   <div class="container">
 
       <header class="row">
          <div class="col-xs-12">
@@ -30,8 +30,8 @@
             <table class="available table table-hover">
                <thead>
                   <tr>
-                     <th class="id">Gebietsnummer</th>
-                     <th class="unworked">Monate nicht bearbeitet</th>
+                     <th class="id">Gebiets&shy;nummer</th>
+                     <th class="unworked">Monate unbearbeitet</th>
                      <th class="households">Haushalte</th>
                      <th class="city">Ort</th>
                      <th class="streets">Straßen</th>
@@ -48,7 +48,9 @@
                      <td title="@t.lastWorked.map(tags.format.date(_))">@t.monthsNotWorked</td>
                      <td>@t.households</td>
                      <td>@t.city</td>
-                     <td title="@t.streets.mkString(", ")" class="streets">@t.streets.mkString(", ")</td>
+                     @defining(t.streets.mkString(", ")) { joined =>
+                     <td title="@joined" class="streets">@joined</td>
+                     }
                      <td class="actions">
                         <a href="@controllers.territory.routes.TerritoryController.show(t.id)">Details</a>
                      </td>
@@ -61,7 +63,7 @@
             <table class="issued table table-hover">
                <thead>
                   <tr>
-                     <th class="id">Gebietsnummer</th>
+                     <th class="id">Gebiets&shy;nummer</th>
                      <th class="working">Monate ausgegeben</th>
                      <th class="friend">Name</th>
                      <th class="city">Ort</th>
@@ -76,7 +78,9 @@
                      <td title="@tags.format.date(t.issued)">@t.monthsIssued</td>
                      <td>@t.friend.name</td>
                      <td>@t.city</td>
-                     <td class="streets"><div>@t.streets.mkString(", ")</div></td>
+                     @defining(t.streets.mkString(", ")) { joined =>
+                     <td class="streets" title="@joined">@joined</td>
+                     }
                      <td class="actions">
                         <a href="@controllers.territory.routes.TerritoryController.show(t.id)">Details</a>
                      </td>

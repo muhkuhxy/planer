@@ -17,6 +17,8 @@ $colors: (
 );
 $dienste: sicherheit, mikro, tonanlage;
 
+
+
 .date-range {
    margin-bottom: 1em;
 }
@@ -120,24 +122,4 @@ $dienste: sicherheit, mikro, tonanlage;
    }
 
 }
-
-.territory {
-   .table.available, .table.issued {
-      td, th {
-         vertical-align: middle;
-      }
-   }
-
-   .friend-selection {
-      max-height: 0;
-      transition: all 1s;
-      overflow-y: hidden;
-
-      &.active {
-         max-height: 500px;
-      }
-   }
-
-}
-
 
