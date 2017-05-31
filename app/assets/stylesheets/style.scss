@@ -73,12 +73,14 @@ $dienste: sicherheit, mikro, tonanlage;
       cursor: pointer;
    }
 
-   .printing-date {
-      display: none;
-   }
+   @media screen {
+      max-height: 200px;
+      overflow-y: scroll;
 
-   max-height: 200px;
-   overflow-y: scroll;
+      .printing-date {
+         display: none;
+      }
+   }
 
 }
 
