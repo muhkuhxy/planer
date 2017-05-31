@@ -5,7 +5,9 @@
     }
 
     body {
-       font: 13pt/1.6 Calibri, Candara, Segoe, "Segoe UI", Optima, Arial, sans-serif !important;
+       font-family: Calibri, Candara, Segoe, "Segoe UI", Optima, Arial, sans-serif !important;
+       line-height: 1.6 !important;
+       font-size: 13pt;
     }
 
     header, .row:not(.termine), .save,  {
