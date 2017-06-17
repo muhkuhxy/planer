@@ -95,7 +95,7 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
     val planId = SQL("insert into plan(name) values ({name})")
       .on('name -> s"Plan vom ${from.format(dateFormat)} bis ${to.format(dateFormat)}")
       .executeInsert().get
-    val dates = daysBetween(from, to.plusDays(7), Seq(DayOfWeek.FRIDAY, DayOfWeek.SUNDAY))
+    val dates = daysBetween(from, to, Seq(DayOfWeek.FRIDAY, DayOfWeek.SUNDAY))
     dates.foreach { date =>
       val dbDate = toDate(date)
       SQL"insert into schedule(plan_id, day) values ($planId, $dbDate)".executeInsert()
