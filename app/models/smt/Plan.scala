@@ -112,7 +112,7 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
     loopingAdjusters.scanLeft(from)((date, adjuster) => {
       date.`with`(adjuster)
     }).dropWhile(d => !weekDays.contains(d.getDayOfWeek))
-      .takeWhile(_.isBefore(to))
+      .takeWhile(d => d.isBefore(to) || d.isEqual(to))
   }
 
   def toDate(local: LocalDate): java.util.Date =
