@@ -36,6 +36,7 @@ class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanReposit
         BadRequest(readableErrors)
       },
       range => {
+        Logger.debug(s"from $range")
         val id = plans.create(range.from, range.to)
         Ok(routes.PlanController.show(id).absoluteURL)
       }

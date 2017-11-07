@@ -28,7 +28,7 @@ trait PlanRepository {
 }
 
 class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with Helper {
-  val dateFormat = DateTimeFormatter.ofPattern("dd.MM.YYYY")
+  val dateFormat = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
   def find(id: Long) = db.withConnection { implicit c =>
     val plan = SQL"select id, name from plan where id = $id".as(int("id") ~ str("name") map flatten single)
@@ -92,6 +92,7 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
   }
 
   def create(from: LocalDate, to: LocalDate) = db.withConnection { implicit c =>
+    Logger.debug(s"formatted to ${to.format(dateFormat)}")
     val planId = SQL("insert into plan(name) values ({name})")
       .on('name -> s"Plan vom ${from.format(dateFormat)} bis ${to.format(dateFormat)}")
       .executeInsert().get
