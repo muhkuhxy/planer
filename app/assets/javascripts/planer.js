@@ -74,11 +74,13 @@ function serializePlan() {
    let parts = $$('.termine tbody tr:nth-child(odd)').map(row => {
       let assignments = assignmentsFor(row);
       let {unavailable} = assignments;
+      const serviceweekCb = $('.serviceweek input', row)
       delete assignments.unavailable;
       return [
          parseDate($('td.datum', row).textContent.substr(5)).format('YYYY-MM-DD'),
          dienste.map(s => assignments[s].map(lookup)),
-         unavailable.map(lookup)
+         unavailable.map(lookup),
+         serviceweekCb ? serviceweekCb.checked : false
       ]
    });
    const id = parseInt($('.termine table').dataset.id, 10);

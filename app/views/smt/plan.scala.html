@@ -2,6 +2,7 @@
 @import tags._
 @import helper._
 @import java.time.LocalDate
+@import java.time.DayOfWeek._
 @import java.time.format._
 @import java.time.temporal._
 @import java.util.Locale
@@ -35,6 +36,7 @@
             <thead>
                <tr>
                   <th>Datum</th>
+                  <th>Dienstwoche</th>
                   <th>Sicherheit</th>
                   <th>Mikro</th>
                   <th>Tonanlage</th>
@@ -60,6 +62,11 @@
             @for(sched <- plan.parts) {
                <tr data-unavailable='@sched.unavailable.mkString(sep=",")'>
                   <td class="datum" rowspan="2">@sched.date.format(df)</td>
+                  <td class="serviceweek" rowspan="2">
+                    @if(sched.date.getDayOfWeek() != SUNDAY) {
+                    <input type="checkbox" @if(sched.date.getDayOfWeek() == TUESDAY) { checked="checked" } />
+                    }
+                  </td>
                   <td class="sicherheit">@assignment(sched.assignments.get("sicherheit"), 0)</td>
                   <td class=mikro>@assignment(sched.assignments.get("mikro"), 0)</td>
                   <td class="tonanlage" rowspan="2">@assignment(sched.assignments.get("tonanlage"), 0)</td>
