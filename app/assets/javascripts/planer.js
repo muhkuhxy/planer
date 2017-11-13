@@ -7,8 +7,14 @@ window.app.planer = {
    init: init
 };
 
+moment.locale('de', {
+  weekdays: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
+})
+moment.locale('de')
 
 function init() {
+  let bus = new Vue()
+
   Vue.component('status-indicator', {
     props: ['state'],
     template: `
@@ -23,54 +29,180 @@ function init() {
       </div>
     `
   })
-Vue.component('save-button', {
-  props: ['url', 'plan'],
-  data: function() {
-    return {
-      state: ''
-    }
-  },
-  watch: {
-    plan: function() {
-      this.save();
-    }
-  },
-  methods: {
-    clicked: function() {
-      this.$emit('clicked')
-    },
-    save: function() {
-      this.state = 'working'
-      console.log(this.plan)
-      req.put(this.url, this.plan).then(result => {
-        this.state = result.status === 200 ? 'success' : 'error'
-        console.log(result)
-      }, err => {
-        this.state = 'error'
-        console.log(result)
-      })
-    }
-  },
-  template: `
-     <span>
-     <button class="btn btn-primary" type="button" @click="clicked" :disabled="this.state === 'working'">Speichern</button>
-     <status-indicator :state="state" />
-     </span>
-  `
-})
-   initDragAndDrop();
 
-  new Vue({
-    el: '.save',
-    data: {
-      plan: null
+  Vue.component('smt-table', {
+    props: ['plan'],
+    data: function() {
+      return {
+        today: moment().format("DD.MM.YYYY")
+      }
     },
     methods: {
-      serializePlan: function() {
-        this.plan = serializePlan()
+      select: function(a) {
+        bus.$emit('selected', a)
+        console.log('emitting ', a)
+      },
+    },
+    template: `
+      <div class="row termine" v-if="plan">
+         <table class="table table-condensed">
+            <thead>
+               <tr>
+                  <th>Datum</th>
+                  <th class="serviceweek">Dienstwoche</th>
+                  <th>Sicherheit</th>
+                  <th>Mikro</th>
+                  <th>Tonanlage</th>
+               </tr>
+            </thead>
+            <tbody>
+              <template v-for="part in plan.parts">
+                 <rowOne :dayPlan="part" @selected="select">
+                 </rowOne>
+                 <tr @click="select(part)">
+                    <td class="sicherheit">{{ part.assignments.sicherheit[1] }}</td>
+                    <td class="mikro">{{ part.assignments.mikro[1] }}</td>
+                 </tr>
+              </template>
+            </tbody>
+         </table>
+
+         <div class="printing-date">{{ today }}</div>
+      </div>
+    `,
+    components: {
+      'rowOne': {
+        props: ['dayPlan'],
+        computed: {
+          dayOfWeek: function() {
+            return this.date.day()
+          },
+          date: function() {
+            return moment(this.dayPlan.date)
+          },
+          formattedDate: function() {
+            return this.date.format('dddd, DD.MM.YYYY')
+          }
+        },
+        methods: {
+          change: function() {
+            bus.$emit('change-serviceweek', this.date)
+          },
+          select: function() {
+            console.log('emit deep')
+            bus.$emit('selected', this.dayPlan)
+          }
+        },
+        template: `
+             <tr @click="select">
+                <td class="datum" rowspan="2">{{ formattedDate }}</td>
+                <td class="serviceweek" rowspan="2">
+                  <input v-if="dayOfWeek !== 0" type="checkbox" :checked="dayOfWeek === 2" @change.stop.prevent="change" />
+                </td>
+                <td class="sicherheit">{{ dayPlan.assignments.sicherheit[0] }}</td>
+                <td class="mikro">{{ dayPlan.assignments.mikro[0] }}</td>
+                <td class="tonanlage" rowspan="2">{{ dayPlan.assignments.tonanlage[0] }}</td>
+             </tr>
+        `
       }
     }
   })
+
+  Vue.component('smt-placeholder', {
+    props: ['assignments', 'date'],
+    computed: {
+      formatted: function() {
+        return moment(this.date).format('DD.MM.YYYY')
+      }
+    },
+    template: `
+      <div class="row planung" v-if="date">
+         <h2 class="col-xs-12">Plan für <span>{{ formatted }}</span></h2>
+         <ph name="sicherheit" :assignment="assignments.sicherheit"></ph>
+         <ph name="mikro" :assignment="assignments.mikro"></ph>
+         <ph name="tonanlage" :assignment="assignments.tonanlage"></ph>
+      </div>
+    `,
+    components: {
+      ph: {
+        props: ['name', 'assignment'],
+        methods: {
+          remove: function() {
+          }
+        },
+        template: `
+         <div class="col-md-4" :class="name">
+            <h3>{{ name }}</h3>
+            <div class="platzhalter" v-for="ass in assignment">
+               <div class="remove" @click="remove()">
+                  <span class="glyphicon glyphicon-remove"></span>
+               </div>
+               <div class="slot"></div>
+            </div>
+         </div>
+        `
+      }
+    }
+  })
+
+  new Vue({
+    el: '#wrapper',
+    data: {
+      plan: null,
+      date: null,
+      assignments: {
+        sicherheit: [undefined, undefined],
+        mikro: [undefined, undefined],
+        tonanlage: [undefined]
+      },
+      saveState: ''
+    },
+    created: function() {
+      let url = $('#api').dataset.url
+      console.log('created ', url)
+      req.get(url).then(response => {
+        console.log(response)
+        let plan = JSON.parse(response.responseText)
+        plan.parts.forEach(p => {
+          let {sicherheit = [], mikro = [], tonanlage = []} = p.assignments
+          sicherheit.length = 2
+          mikro.length = 2
+          tonanlage.length = 1
+          p.assignments = {
+            sicherheit: sicherheit,
+            mikro: mikro,
+            tonanlage: tonanlage
+          }
+        })
+        this.plan = plan
+      })
+      bus.$on('change-serviceweek', date => {
+        let dow = date.day() === 2 ? 5 : 2;
+        let formatted = date.format('YYYY-MM-DD')
+        this.plan.parts.find(p => p.date === formatted).date = date.day(dow).format('YYYY-MM-DD')
+      })
+      bus.$on('selected', dayPlan => {
+        console.log('received', dayPlan)
+        this.assignments = dayPlan.assignments
+        this.date = dayPlan.date
+      })
+    },
+    methods: {
+      save: function() {
+        this.saveState = 'working'
+        req.put(this.url, this.plan).then(result => {
+          this.saveState = result.status === 200 ? 'success' : 'error'
+          console.log(result)
+        }, err => {
+          this.saveState = 'error'
+          console.log(result)
+        })
+      }
+    }
+  })
+
+
+   initDragAndDrop();
 
    $$('.termine tbody tr:nth-child(odd)').forEach( primaryRow => {
       [primaryRow, primaryRow.nextElementSibling].forEach( row => {
