@@ -11,10 +11,12 @@ GET    /territory/:id controllers.territory.TerritoryController.show(id: String)
 GET    /plan          controllers.smt.PlanController.overview
 POST   /plan          controllers.smt.PlanController.create
 GET    /plan/:id      controllers.smt.PlanController.show(id: Long)
+GET    /api/plan/:id  controllers.smt.PlanController.showJson(id: Long)
 PUT    /plan/:id      controllers.smt.PlanController.save(id: Long)
 DELETE /plan/:id      controllers.smt.PlanController.remove(id: Long)
 
 GET    /assignees     controllers.smt.AssigneeController.list
+GET    /api/assignees controllers.smt.AssigneeController.listJson
 PUT    /assignees     controllers.smt.AssigneeController.save
 
 GET    /assets/*file  controllers.Assets.at(path="/public", file)

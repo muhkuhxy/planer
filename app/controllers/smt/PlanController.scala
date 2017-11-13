@@ -15,9 +15,9 @@ class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanReposit
   implicit val ldRead = new Reads[LocalDate] {
     def reads(json: JsValue) = JsSuccess(LocalDate.parse(json.as[String]))
   }
-  implicit val SchedRead = Json.reads[Schedule]
-  implicit val PlanRead = Json.reads[Plan]
-  implicit val RangeRead = Json.reads[Range]
+  implicit val SchedRead = Json.format[Schedule]
+  implicit val PlanRead = Json.format[Plan]
+  implicit val RangeRead = Json.format[Range]
 
   def overview = Authenticated {
     Ok(views.html.smt.overview(plans.list))
@@ -25,6 +25,11 @@ class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanReposit
 
   def show(id: Long) = Authenticated {
     Ok(views.html.smt.plan(assigness.getAssignees, plans.find(id)))
+  }
+
+  def showJson(id: Long) = Authenticated {
+    val json = Json.toJson(plans.find(id))
+    Ok(json)
   }
 
   def create = Authenticated(BodyParsers.parse.json) { implicit request =>

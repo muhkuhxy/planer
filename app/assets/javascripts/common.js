@@ -36,3 +36,9 @@ export function req(method, url, data) {
 
 }
 
+for (let verb of ['GET', 'PUT', 'POST', 'DELETE']) {
+  req[verb.toLowerCase()] = function(url, data) {
+    return req(verb, url, data);
+  }
+}
+

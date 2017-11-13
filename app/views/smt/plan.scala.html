@@ -136,20 +136,13 @@
       </div>
 
       <div class="save">
-         <button id="save" class="btn btn-primary" type="button" data-target="@controllers.smt.routes.PlanController.save(plan.id)">Speichern</button>
-         <div class="working hide">
-            <span class="glyphicon glyphicon-repeat"></span>
-         </div>
-         <div class="save-ok hide">
-            <span class="glyphicon glyphicon-ok-circle"></span>
-         </div>
-         <div class="error hide">
-            <span class="glyphicon glyphicon-remove-circle"></span>
-         </div>
+        <save-button url="@controllers.smt.routes.PlanController.save(plan.id)" :plan="plan" @@clicked="serializePlan">
+        </save-button>
          <a class="btn btn-default" href='mailto:@assignees.map(_.email).flatten.mkString(",")'>E-Mail</a>
       </div>
 
    </div>
+   <script src='https://unpkg.com/vue@@2.5.3/dist/vue.js' type="text/javascript"></script>
    <script src='@routes.Assets.at("main.js")' type="text/javascript"></script>
    <script>app.planer.init()</script>
 </body>

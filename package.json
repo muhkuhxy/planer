@@ -1,1 +1,8 @@
-{ "engines": { "node": "4.0.0" } }
+{
+  "engines": {
+    "node": "4.0.0"
+  },
+  "dependencies": {
+    "vue": "^2.5.3"
+  }
+}

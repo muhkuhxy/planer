@@ -7,8 +7,70 @@ window.app.planer = {
    init: init
 };
 
+
 function init() {
+  Vue.component('status-indicator', {
+    props: ['state'],
+    template: `
+      <div class="working" v-if="state == 'working'">
+         <span class="glyphicon glyphicon-repeat"></span>
+      </div>
+      <div class="save-ok" v-else-if="state == 'success'">
+         <span class="glyphicon glyphicon-ok-circle"></span>
+      </div>
+      <div class="error" v-else-if="state == 'error'">
+         <span class="glyphicon glyphicon-remove-circle"></span>
+      </div>
+    `
+  })
+Vue.component('save-button', {
+  props: ['url', 'plan'],
+  data: function() {
+    return {
+      state: ''
+    }
+  },
+  watch: {
+    plan: function() {
+      this.save();
+    }
+  },
+  methods: {
+    clicked: function() {
+      this.$emit('clicked')
+    },
+    save: function() {
+      this.state = 'working'
+      console.log(this.plan)
+      req.put(this.url, this.plan).then(result => {
+        this.state = result.status === 200 ? 'success' : 'error'
+        console.log(result)
+      }, err => {
+        this.state = 'error'
+        console.log(result)
+      })
+    }
+  },
+  template: `
+     <span>
+     <button class="btn btn-primary" type="button" @click="clicked" :disabled="this.state === 'working'">Speichern</button>
+     <status-indicator :state="state" />
+     </span>
+  `
+})
    initDragAndDrop();
+
+  new Vue({
+    el: '.save',
+    data: {
+      plan: null
+    },
+    methods: {
+      serializePlan: function() {
+        this.plan = serializePlan()
+      }
+    }
+  })
 
    $$('.termine tbody tr:nth-child(odd)').forEach( primaryRow => {
       [primaryRow, primaryRow.nextElementSibling].forEach( row => {
@@ -31,23 +93,22 @@ function init() {
    });
 
    let saveButton = $('#save');
-   saveButton.addEventListener('click', ev => {
-      $('.working').classList.remove('hide');
-      $('.save-ok').classList.add('hide');
-      $('.error').classList.add('hide');
-      req('PUT', saveButton.dataset.target, serializePlan()).then(result => {
-         $('.working').classList.add('hide');
-         if(result.status === 200) {
-            $('.save-ok').classList.remove('hide');
-         }
-         else {
-            $('.error').classList.remove('hide');
-         }
-      }, err => {
-         $('.working').classList.add('hide');
-         $('.error').classList.remove('hide');
-      });
-   });
+   // saveButton.addEventListener('click', ev => {
+   //    $('.working').classList.remove('hide');
+   //    $('.save-ok').classList.add('hide');
+   //    $('.error').classList.add('hide');
+   //       $('.working').classList.add('hide');
+   //       if(result.status === 200) {
+   //          $('.save-ok').classList.remove('hide');
+   //       }
+   //       else {
+   //          $('.error').classList.remove('hide');
+   //       }
+   //    }, err => {
+   //       $('.working').classList.add('hide');
+   //       $('.error').classList.remove('hide');
+   //    });
+   // });
 
     $$('.platzhalter .remove').forEach(el => {
        el.addEventListener('click', () => {

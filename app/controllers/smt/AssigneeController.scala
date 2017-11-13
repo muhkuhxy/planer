@@ -14,7 +14,12 @@ class AssigneeController @Inject()(assignees: AssigneeRepository) extends Contro
     Ok(views.html.smt.assignees(assignees.getAssignees))
   }
 
-  implicit val assigneeReads = Json.reads[Assignee]
+  def listJson = Authenticated {
+    val json = Json.toJson(assignees.getAssignees)
+    Ok(json)
+  }
+
+  implicit val assigneeReads = Json.format[Assignee]
 
   def save = Authenticated(BodyParsers.parse.json) { implicit request =>
     val result = parseBody(request.body)
