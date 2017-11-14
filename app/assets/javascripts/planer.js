@@ -31,7 +31,7 @@ function init() {
   })
 
   Vue.component('smt-table', {
-    props: ['plan'],
+    props: ['plan', 'current'],
     data: function() {
       return {
         today: moment().format("DD.MM.YYYY")
@@ -57,9 +57,9 @@ function init() {
             </thead>
             <tbody>
               <template v-for="part in plan.parts">
-                 <rowOne :dayPlan="part" @selected="select">
+                 <rowOne :dayPlan="part" @selected="select" :class="{ info: current === part }">
                  </rowOne>
-                 <tr @click="select(part)">
+                 <tr @click="select(part)" :class="{ info: current === part }">
                     <td class="sicherheit">{{ part.assignments.sicherheit[1] }}</td>
                     <td class="mikro">{{ part.assignments.mikro[1] }}</td>
                  </tr>
@@ -112,7 +112,7 @@ function init() {
     props: ['assignments', 'date'],
     computed: {
       formatted: function() {
-        return moment(this.date).format('DD.MM.YYYY')
+        return moment(this.date).format('dddd, DD.MM.YYYY')
       }
     },
     template: `
@@ -155,7 +155,8 @@ function init() {
         mikro: [undefined, undefined],
         tonanlage: [undefined]
       },
-      saveState: ''
+      saveState: '',
+      current: null
     },
     created: function() {
       let url = $('#api').dataset.url
@@ -185,6 +186,7 @@ function init() {
         console.log('received', dayPlan)
         this.assignments = dayPlan.assignments
         this.date = dayPlan.date
+        this.current = dayPlan
       })
     },
     methods: {
