@@ -9,3 +9,5 @@ dist
 *.db
 .idea
 .vagrant
+node_modules
+package-lock.json
