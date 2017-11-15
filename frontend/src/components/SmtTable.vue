@@ -22,7 +22,7 @@
       </tbody>
     </table>
 
-    <div class="printing-date">{{ today }}</div>
+    <div class="printing-date">Stand vom {{ today }}</div>
   </div>
 </template>
 
@@ -50,6 +50,3 @@ export default {
   }
 }
 </script>
-
-<style>
-</style>

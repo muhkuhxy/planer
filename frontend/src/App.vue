@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <Nav></Nav>
+    <app-nav></app-nav>
 
     <div class="container" id="wrapper">
 
@@ -30,13 +30,12 @@
 </template>
 
 <script>
-import {req, bus} from './common'
+import {bus} from './common'
 import SmtTable from './components/SmtTable'
 import SmtPlaceholder from './components/SmtPlaceholder'
 import StatusIndicator from './components/StatusIndicator'
-
-// import 'bootstrap-sass/assets/stylesheets/_bootstrap.scss'
-// import './assets/global-styles.scss'
+import moment from 'moment'
+import service from './plan.service'
 
 export default {
   name: 'app',
@@ -60,32 +59,14 @@ export default {
   },
   created: function () {
     console.log('created ', this.api)
-    req.get(this.api).then(response => {
-      console.log(response)
-      let plan = JSON.parse(response.responseText)
-      plan.parts.forEach(p => {
-        let {sicherheit = [], mikro = [], tonanlage = []} = p.assignments
-        sicherheit.length = 2
-        mikro.length = 2
-        tonanlage.length = 1
-        p.assignments = {
-          sicherheit: sicherheit,
-          mikro: mikro,
-          tonanlage: tonanlage
-        }
-      })
-      this.plan = plan
-    }, err => console.log('failed to load plan ', err))
-    bus.$on('change-serviceweek', date => {
+    service.getPlan(19).then(p => {
+      this.plan = p
+      this.current = p.parts[0]
+    }, err => console.log('failed to load plan', err))
+    bus.$on('change-serviceweek', dayPlan => {
+      const date = moment(dayPlan.date)
       let dow = date.day() === 2 ? 5 : 2
-      let formatted = date.format('YYYY-MM-DD')
-      let part = this.plan.parts.find(p => p.date === formatted)
-      if (this.current && (this.current.date === part)) {
-        console.log('updating current')
-        this.current.date = part.date
-      } else {
-        part.date = date.day(dow).format('YYYY-MM-DD')
-      }
+      dayPlan.date = date.day(dow).format('YYYY-MM-DD')
     })
     bus.$on('selected', dayPlan => {
       this.assignments = dayPlan.assignments
@@ -95,7 +76,7 @@ export default {
   methods: {
     save: function () {
       this.saveState = 'working'
-      req.put('/api/plan/' + this.plan.id, this.plan).then(result => {
+      service.save(this.plan).then(result => {
         this.saveState = result.status === 200 ? 'success' : 'error'
         console.log(result)
       }, err => {
@@ -109,64 +90,12 @@ export default {
 
 <style lang="scss">
 $icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
-@import '~bootstrap-sass/assets/stylesheets/_bootstrap.scss';
+@import '~bootstrap-sass/assets/stylesheets/bootstrap';
 @import "./assets/print";
-
-$color-sicherheit: dodgerblue;
-$color-mikro: forestgreen;
-$color-tonanlage: deeppink;
-$color-platzhalter: gainsboro;
-$color-active: #d9edf7;
-$color-disabled: #dcadad;
-$color-assigned: gainsboro;
-
-$colors: (
-    sicherheit: dodgerblue,
-    mikro: forestgreen,
-    tonanlage: deeppink
-);
-$dienste: sicherheit, mikro, tonanlage;
-
+@import './assets/settings';
 
 .date-range {
    margin-bottom: 1em;
-}
-
-@mixin border-radius {
-   border-radius: 5px;
-}
-
-.planung {
-
-   .platzhalter {
-      width: 100%;
-      height: 5em;
-      text-align: center;
-      padding: 2em 0;
-      margin-bottom: 1em;
-      position: relative;
-
-      .remove {
-         position: absolute;
-         top: 3px;
-         right: 5px;
-         font-weight: bold;
-         cursor: pointer;
-      }
-
-      &:not(.bg-success) {
-         background-color: $color-platzhalter;
-      }
-
-      @include border-radius;
-   }
-
-    @each $dienst in $dienste {
-        .#{$dienst} h3 {
-            color: map-get($colors, $dienst);
-        }
-    }
-
 }
 
 .termine {
@@ -187,7 +116,6 @@ $dienste: sicherheit, mikro, tonanlage;
          display: none;
       }
    }
-
 }
 
 .save {
@@ -199,6 +127,4 @@ $dienste: sicherheit, mikro, tonanlage;
     margin-right: .3em;
   }
 }
-
-
 </style>

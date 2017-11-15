@@ -1,6 +1,6 @@
 <template>
   <tr @click="select">
-    <td class="datum" rowspan="2">{{ formattedDate }}</td>
+    <td class="datum" rowspan="2">{{ dayPlan.date | dateLong }}</td>
     <td class="serviceweek" rowspan="2">
       <input v-if="dayOfWeek !== 0" type="checkbox" :checked="dayOfWeek === 2" @change.stop.prevent="change" />
     </td>
@@ -30,7 +30,7 @@ export default {
   },
   methods: {
     change: function () {
-      bus.$emit('change-serviceweek', this.date)
+      bus.$emit('change-serviceweek', this.dayPlan)
     },
     select: function () {
       console.log('emit deep')

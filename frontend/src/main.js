@@ -14,6 +14,11 @@ moment.locale('de', {
 })
 moment.locale('de')
 
+Vue.filter('dateLong', function (value) {
+  if (!value) return ''
+  return moment(value).format('dddd, DD.MM.YYYY')
+})
+
 // eslint-disable-next-line no-new
 new Vue({
   el: '#app',
