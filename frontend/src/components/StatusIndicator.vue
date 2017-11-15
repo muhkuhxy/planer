@@ -13,6 +13,41 @@
 <script>
 export default {
   name: 'status-indicator',
-  props: ['state'],
+  props: ['state']
 }
 </script>
+
+<style lang="scss">
+$icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
+@import '~bootstrap-sass/assets/stylesheets/_bootstrap.scss';
+
+.glyphicon {
+  font-size: 1.5em;
+  margin-top: 0.25em;
+}
+
+.save-ok {
+  display: inline-block;
+  color: $brand-success;
+}
+
+.error {
+  display: inline-block;
+  color: red;
+}
+
+.working {
+  display: inline-block;
+  animation: 2s linear 0s infinite normal turnit;
+}
+
+@keyframes turnit {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
