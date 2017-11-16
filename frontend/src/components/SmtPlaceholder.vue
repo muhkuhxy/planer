@@ -10,11 +10,11 @@ const ph = {
   template: `
   <div class="col-md-4" :class="name">
     <h3>{{ name }}</h3>
-      <div class="platzhalter" v-for="ass in assignment">
-      <div class="remove" @click="remove()">
-      <span class="glyphicon glyphicon-remove"></span>
-    </div>
-      <div class="slot"></div>
+      <div class="platzhalter" :data-service="name" :data-index="index" v-for="(ass, index) in assignment">
+        <div class="remove" @click="remove()">
+        <span class="glyphicon glyphicon-remove"></span>
+      </div>
+      <div class="slot">{{ ass }}</div>
     </div>
   </div>
   `

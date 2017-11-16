@@ -7,8 +7,6 @@ import moment from 'moment'
 
 Vue.config.productionTip = false
 
-const api = 'http://localhost:8080/api/plan/19'
-
 moment.locale('de', {
   weekdays: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
 })
@@ -23,9 +21,6 @@ Vue.filter('dateLong', function (value) {
 new Vue({
   el: '#app',
   router,
-  template: '<App :api="api"/>',
-  components: { App },
-  data: {
-    api
-  }
+  template: '<App/>',
+  components: { App }
 })

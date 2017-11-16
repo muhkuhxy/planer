@@ -26,5 +26,8 @@ export default {
       throw new Error('need plan with id')
     }
     return req.put('/api/plan/' + plan.id, plan)
+  },
+  getAssignees: function () {
+    return req.get('/api/assignees').then(r => JSON.parse(r.responseText))
   }
 }

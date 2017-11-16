@@ -16,7 +16,7 @@
       <smt-placeholder :assignments="assignments" v-if="current" :date="current.date">
       </smt-placeholder>
 
-      <smt-assignees>
+      <smt-assignees :current="current" :assignees="assignees">
       </smt-assignees>
 
       <div class="save">
@@ -34,6 +34,7 @@ import {bus} from './common'
 import SmtTable from './components/SmtTable'
 import SmtPlaceholder from './components/SmtPlaceholder'
 import StatusIndicator from './components/StatusIndicator'
+import SmtAssignees from './components/SmtAssignees'
 import moment from 'moment'
 import service from './plan.service'
 
@@ -42,9 +43,9 @@ export default {
   components: {
     SmtTable,
     SmtPlaceholder,
+    SmtAssignees,
     StatusIndicator
   },
-  props: ['api'],
   data: function () {
     return {
       plan: null,
@@ -54,15 +55,18 @@ export default {
         tonanlage: [undefined]
       },
       saveState: '',
-      current: null
+      current: null,
+      assignees: []
     }
   },
   created: function () {
-    console.log('created ', this.api)
     service.getPlan(19).then(p => {
       this.plan = p
       this.current = p.parts[0]
     }, err => console.log('failed to load plan', err))
+    service.getAssignees().then(as => {
+      this.assignees = as
+    })
     bus.$on('change-serviceweek', dayPlan => {
       const date = moment(dayPlan.date)
       let dow = date.day() === 2 ? 5 : 2
