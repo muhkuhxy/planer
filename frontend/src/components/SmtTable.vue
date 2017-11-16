@@ -42,7 +42,6 @@ export default {
   methods: {
     select: function (a) {
       bus.$emit('selected', a)
-      console.log('emitting ', a)
     }
   },
   components: {

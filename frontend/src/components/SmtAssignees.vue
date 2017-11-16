@@ -1,34 +1,79 @@
 <script>
-import {$$} from '../common'
+import {$$, bus} from '../common'
 
 export default {
   props: ['assignees', 'current'],
   components: {
     assignee: {
       template: `
-        <div>
+        <div draggable="true">
           <span class="name">{{ ae.name }}</span>
-          <input class="pull-right" name="unavailable" value="" type="checkbox">
+          <input class="pull-right" :class="classObject" :disabled="ae.unavailable" value="" type="checkbox">
           <div class="dienste">
             <div class="counter pull-left">0</div>
             <span :class="s" v-for="s in ae.services">{{ s[0] }}</span>
           </div>
         </div>
       `,
-      props: ['ae']
+      props: ['ae'],
+      computed: {
+        classObject: function () {
+          return {
+            disabled: this.ae.unavailable,
+            assigned: this.ae.assigned
+          }
+        }
+      }
     }
   },
   created: function () {
-//    service.options('assignees', {
-//      isContainer: function (el) {
-//        return el.classList && el.classList.contains('platzhalter')
-//      },
-//      accepts: function (el, target, source) {
-//        console.log('accepts', el, target, source)
-//        return $$('.dienste span', el).map(span => span.className).includes(target.dataset.service)
-//      },
-//      copy: true
-//    })
+    let dragged
+
+    document.addEventListener('dragstart', e => {
+      dragged = e.target
+      if (e.target.classList.contains('disabled') ||
+        e.target.classList.contains('assigned')) {
+        e.preventDefault()
+        return
+      }
+      e.dataTransfer.setData('text/plain', null)
+      e.target.style.opacity = 0.5
+    })
+
+    document.addEventListener('dragend', e => {
+      dragged.style.opacity = ''
+    })
+
+    function classesOverlap (placeholder) {
+      return $$('.dienste span', dragged).map(span => span.className).includes(placeholder.dataset.service)
+    }
+
+    document.addEventListener('dragenter', e => {
+      if (e.target.classList && e.target.classList.contains('platzhalter') && classesOverlap(e.target, dragged)) {
+        e.target.style.backgroundColor = '#aaa'
+      } else {
+        e.preventDefault()
+      }
+    }, false)
+
+    document.addEventListener('dragover', e => {
+      e.preventDefault()
+    })
+
+    document.addEventListener('dragleave', e => {
+      if (!e.target || !e.target.style) {
+        return
+      }
+      e.target.style.backgroundColor = ''
+    })
+
+    document.addEventListener('drop', e => {
+      e.preventDefault()
+      if (e.target.classList.contains('platzhalter') && classesOverlap(e.target)) {
+        e.target.style.backgroundColor = ''
+        bus.$emit('assigned', dragged, e.target)
+      }
+    })
   }
 }
 </script>

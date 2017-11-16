@@ -33,7 +33,6 @@ export default {
       bus.$emit('change-serviceweek', this.dayPlan)
     },
     select: function () {
-      console.log('emit deep')
       bus.$emit('selected', this.dayPlan)
     }
   }

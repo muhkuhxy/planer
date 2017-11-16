@@ -2,19 +2,19 @@
 import Vue from 'vue'
 
 const ph = {
-  props: ['name', 'assignment'],
+  props: ['service', 'assignment'],
   methods: {
     remove: function () {
     }
   },
   template: `
-  <div class="col-md-4" :class="name">
-    <h3>{{ name }}</h3>
-      <div class="platzhalter" :data-service="name" :data-index="index" v-for="(ass, index) in assignment">
+  <div class="col-md-4" :class="service">
+    <h3>{{ service }}</h3>
+      <div class="platzhalter" :data-service="service" :data-index="index" v-for="(ass, index) in assignment">
         <div class="remove" @click="remove()">
-        <span class="glyphicon glyphicon-remove"></span>
-      </div>
-      <div class="slot">{{ ass }}</div>
+          <span class="glyphicon glyphicon-remove"></span>
+        </div>
+        {{ ass }}
     </div>
   </div>
   `
@@ -31,9 +31,9 @@ export default Vue.component('smt-placeholder', {
 <template>
   <div class="row planung" v-if="date">
   <h2 class="col-xs-12">Plan für <span>{{ date | dateLong }}</span></h2>
-  <ph name="sicherheit" :assignment="assignments.sicherheit"></ph>
-  <ph name="mikro" :assignment="assignments.mikro"></ph>
-  <ph name="tonanlage" :assignment="assignments.tonanlage"></ph>
+  <ph service="sicherheit" :assignment="assignments.sicherheit"></ph>
+  <ph service="mikro" :assignment="assignments.mikro"></ph>
+  <ph service="tonanlage" :assignment="assignments.tonanlage"></ph>
   </div>
 </template>
 

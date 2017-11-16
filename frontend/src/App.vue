@@ -30,7 +30,7 @@
 </template>
 
 <script>
-import {bus} from './common'
+import {$, bus} from './common'
 import SmtTable from './components/SmtTable'
 import SmtPlaceholder from './components/SmtPlaceholder'
 import StatusIndicator from './components/StatusIndicator'
@@ -75,6 +75,10 @@ export default {
     bus.$on('selected', dayPlan => {
       this.assignments = dayPlan.assignments
       this.current = dayPlan
+    })
+    bus.$on('assigned', (assignee, service) => {
+      var current = this.plan.parts.find(p => this.current === p)
+      current.assignments[service.dataset.service][service.dataset.index] = $('.name', assignee).textContent
     })
   },
   methods: {
