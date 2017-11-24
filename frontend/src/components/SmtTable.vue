@@ -1,51 +1,76 @@
 <template>
   <div class="row termine" v-if="plan">
-    <table class="table table-condensed">
-      <thead>
-        <tr>
-          <th>Datum</th>
-          <th class="serviceweek">Dienstwoche</th>
-          <th>Sicherheit</th>
-          <th>Mikro</th>
-          <th>Tonanlage</th>
-        </tr>
-      </thead>
-      <tbody>
-        <template v-for="part in plan.parts">
-          <smt-table-row-one :dayPlan="part" @selected="select" :class="{ info: current === part }">
-          </smt-table-row-one>
-          <tr @click="select(part)" :class="{ info: current === part }">
-            <td class="sicherheit">{{ part.assignments.sicherheit[1] }}</td>
-            <td class="mikro">{{ part.assignments.mikro[1] }}</td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+    <div class="tr">
+      <div class="th">Datum</div>
+      <div class="th">Dienstwoche</div>
+      <div class="th">Sicherheit</div>
+      <div class="th">Mikro</div>
+      <div class="th">Tonanlage</div>
+    </div>
+    <div class="tr" v-for="a in assignments" @click="select(a.date)" :class="{ 'bg-info': current === a.date }">
+      <div class="td">{{ a.date | dateLong }}</div>
+      <div class="td">
+        <input v-if="dayOfWeek(a.date) !== 0" type="checkbox" :checked="dayOfWeek(a.date) === 2" @change.stop.prevent="change(a)" />
+      </div>
+      <div class="td col">
+        <div>{{ a.sicherheit[0] }}</div>
+        <div>{{ a.sicherheit[1] }}</div>
+      </div>
+      <div class="td col">
+        <div>{{ a.mikro[0] }}</div>
+        <div>{{ a.mikro[1] }}</div>
+      </div>
+      <div class="td col">
+        <div>{{ a.tonanlage[0] }}</div>
+      </div>
+    </div>
 
     <div class="printing-date">Stand vom {{ today }}</div>
   </div>
 </template>
 
+<style lang="scss" scoped>
+.tr {
+  display: flex;
+  width: 100%;
+}
+.tr > * {
+  width: 20%;
+}
+</style>
+
 <script>
-import SmtTableRowOne from './SmtTableRowOne'
 import moment from 'moment'
-import {bus} from '../common'
 
 export default {
   name: 'smt-table',
-  props: ['plan', 'current'],
   data: function () {
     return {
       today: moment().format('DD.MM.YYYY')
     }
   },
-  methods: {
-    select: function (a) {
-      bus.$emit('selected', a)
+  computed: {
+    plan () {
+      return this.$store.state.parts
+    },
+    assignments () {
+      return this.$store.state.assignments
+    },
+    current () {
+      return this.$store.state.current
     }
   },
-  components: {
-    SmtTableRowOne
+  methods: {
+    select (date) {
+      console.log(date)
+      this.$store.commit('select', date)
+    },
+    dayOfWeek (d) {
+      return moment(d).day()
+    },
+    change (a) {
+      this.$store.commit('change-serviceweek', a)
+    }
   }
 }
 </script>

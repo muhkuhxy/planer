@@ -1,27 +1,36 @@
 <script>
 import Vue from 'vue'
+import dp from 'dot-prop'
 
 const ph = {
-  props: ['service', 'assignment'],
-  methods: {
-    remove: function () {
+  props: ['service'],
+  computed: {
+    assignment () {
+      return dp.get(this.$store.state.currentAssignment, this.service)
     }
   },
   template: `
   <div class="col-md-4" :class="service">
     <h3>{{ service }}</h3>
-      <div class="platzhalter" :data-service="service" :data-index="index" v-for="(ass, index) in assignment">
+      <div class="platzhalter" :data-service="service" :data-index="index" v-for="(name, index) in assignment">
         <div class="remove" @click="remove()">
           <span class="glyphicon glyphicon-remove"></span>
         </div>
-        {{ ass }}
+        {{ name }}
     </div>
   </div>
   `
 }
 
 export default Vue.component('smt-placeholder', {
-  props: ['assignments', 'date'],
+  computed: {
+    current () {
+      return dp.get(this.$store.state, 'current')
+    },
+    currentAssignment () {
+      return dp.get(this.$store.state.currentAssignment)
+    }
+  },
   components: {
     ph
   }
@@ -29,11 +38,11 @@ export default Vue.component('smt-placeholder', {
 </script>
 
 <template>
-  <div class="row planung" v-if="date">
-  <h2 class="col-xs-12">Plan für <span>{{ date | dateLong }}</span></h2>
-  <ph service="sicherheit" :assignment="assignments.sicherheit"></ph>
-  <ph service="mikro" :assignment="assignments.mikro"></ph>
-  <ph service="tonanlage" :assignment="assignments.tonanlage"></ph>
+  <div class="row planung" v-if="current">
+  <h2 class="col-xs-12">Plan für <span>{{ current | dateLong }}</span></h2>
+  <ph service="sicherheit"></ph>
+  <ph service="mikro"></ph>
+  <ph service="tonanlage"></ph>
   </div>
 </template>
 

@@ -1,8 +1,13 @@
 <script>
-import {$$, bus} from '../common'
+import {$, $$} from '../common'
 
 export default {
-  props: ['assignees', 'current'],
+  props: ['assignees'],
+  computed: {
+    current () {
+      return this.$store.state.current
+    }
+  },
   components: {
     assignee: {
       template: `
@@ -71,7 +76,11 @@ export default {
       e.preventDefault()
       if (e.target.classList.contains('platzhalter') && classesOverlap(e.target)) {
         e.target.style.backgroundColor = ''
-        bus.$emit('assigned', dragged, e.target)
+        this.$store.commit('assign', {
+          name: $('.name', dragged).textContent,
+          service: e.target.dataset.service,
+          index: e.target.dataset.index
+        })
       }
     })
   }
