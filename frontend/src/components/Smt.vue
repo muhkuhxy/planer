@@ -1,43 +1,38 @@
 <template>
-  <div id="app">
-    <app-nav></app-nav>
+  <div class="container" id="wrapper">
 
-    <div class="container" id="wrapper">
-
-      <header class="row">
-        <div class="col-xs-12">
-          <h2>{{ title }}</h2>
-        </div>
-      </header>
-
-      <smt-table>
-      </smt-table>
-
-      <smt-placeholder>
-      </smt-placeholder>
-
-      <smt-assignees :assignees="assignees">
-      </smt-assignees>
-
-      <div class="save">
-        <button class="btn btn-primary" type="button" @click="save" :disabled="this.saveState === 'working'">Speichern</button>
-        <status-indicator :state="saveState" />
-          <a class="btn btn-default" href='mailto:@assignees.map(_.email).flatten.mkString(",")'>E-Mail</a>
+    <header class="row">
+      <div class="col-xs-12">
+        <h2>{{ title }}</h2>
       </div>
+    </header>
 
+    <smt-table>
+    </smt-table>
+
+    <smt-placeholder>
+    </smt-placeholder>
+
+    <smt-assignees :assignees="assignees">
+    </smt-assignees>
+
+    <div class="save">
+      <button class="btn btn-primary" type="button" @click="save" :disabled="this.saveState === 'working'">Speichern</button>
+      <status-indicator :state="saveState" />
+        <a class="btn btn-default" href='mailto:@assignees.map(_.email).flatten.mkString(",")'>E-Mail</a>
     </div>
+
   </div>
 </template>
 
 <script>
-import SmtTable from './components/SmtTable'
-import SmtPlaceholder from './components/SmtPlaceholder'
-import StatusIndicator from './components/StatusIndicator'
-import SmtAssignees from './components/SmtAssignees'
-import service from './plan.service'
+import SmtTable from './SmtTable'
+import SmtPlaceholder from './SmtPlaceholder'
+import StatusIndicator from './StatusIndicator'
+import SmtAssignees from './SmtAssignees'
+import service from '../plan.service'
 
 export default {
-  name: 'app',
   components: {
     SmtTable,
     SmtPlaceholder,
@@ -62,7 +57,7 @@ export default {
     }
   },
   created: function () {
-    service.getPlan(19).then(p => {
+    service.getPlan(this.$route.params.id).then(p => {
       this.$store.commit('load', p)
     }, err => console.log('failed to load plan', err))
     service.getAssignees().then(as => {
@@ -87,8 +82,8 @@ export default {
 <style lang="scss">
 $icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
 @import '~bootstrap-sass/assets/stylesheets/bootstrap';
-@import "./assets/print";
-@import './assets/settings';
+@import "../assets/print";
+@import '../assets/settings';
 
 .date-range {
    margin-bottom: 1em;

@@ -8,19 +8,21 @@
       <div class="th">Tonanlage</div>
     </div>
     <div class="tr" v-for="a in assignments" @click="select(a.date)" :class="{ 'bg-info': current === a.date }">
-      <div class="td">{{ a.date | dateLong }}</div>
-      <div class="td">
+      <div class="cell main middle">
+        <div>{{ a.date | dateLong }}</div>
+      </div>
+      <div class="cell main middle">
         <input v-if="dayOfWeek(a.date) !== 0" type="checkbox" :checked="dayOfWeek(a.date) === 2" @change.stop.prevent="change(a)" />
       </div>
-      <div class="td col">
-        <div>{{ a.sicherheit[0] }}</div>
-        <div>{{ a.sicherheit[1] }}</div>
+      <div class="cell main col">
+        <div class="cell sub">{{ a.sicherheit[0] }}</div>
+        <div class="cell sub">{{ a.sicherheit[1] }}</div>
       </div>
-      <div class="td col">
-        <div>{{ a.mikro[0] }}</div>
-        <div>{{ a.mikro[1] }}</div>
+      <div class="cell main col">
+        <div class="cell sub">{{ a.mikro[0] }}</div>
+        <div class="cell sub">{{ a.mikro[1] }}</div>
       </div>
-      <div class="td col">
+      <div class="cell main middle">
         <div>{{ a.tonanlage[0] }}</div>
       </div>
     </div>
@@ -33,9 +35,38 @@
 .tr {
   display: flex;
   width: 100%;
+  align-items: stretch;
 }
-.tr > * {
-  width: 20%;
+.th {
+  font-weight: bold;
+  padding: 5px;
+  border-bottom: 2px solid #ddd;
+}
+.cell {
+  cursor: pointer;
+  $padding: 5px;
+  padding: $padding;
+  min-height: calc(20px + #{2*$padding});
+  border-bottom: 1px solid #ddd;
+  &.col {
+    padding: 0;
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: stretch;
+  }
+  &.sub:last-child {
+    border-bottom: none;
+  }
+}
+.th, .cell.main {
+  &:first-child {
+    width: 30%;
+  }
+  width: calc(70%/4);
+}
+.middle {
+  display: flex;
+  align-items: center;
 }
 </style>
 
@@ -62,7 +93,6 @@ export default {
   },
   methods: {
     select (date) {
-      console.log(date)
       this.$store.commit('select', date)
     },
     dayOfWeek (d) {

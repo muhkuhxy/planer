@@ -3,7 +3,6 @@ import {req} from './common'
 export default {
   getPlan: function (id) {
     return req.get('/api/plan/' + id).then(response => {
-      console.log(response)
       let plan = JSON.parse(response.responseText)
       plan.parts.forEach(p => {
         let {sicherheit = [], mikro = [], tonanlage = []} = p.assignments
@@ -16,8 +15,6 @@ export default {
           tonanlage
         }
       })
-      this.plan = plan
-      this.current = plan ? plan.parts[0] : null
       return plan
     })
   },

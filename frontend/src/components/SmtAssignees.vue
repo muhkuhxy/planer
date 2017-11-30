@@ -11,9 +11,9 @@ export default {
   components: {
     assignee: {
       template: `
-        <div draggable="true">
+        <div draggable="true" :class="classObject">
           <span class="name">{{ ae.name }}</span>
-          <input class="pull-right" :class="classObject" :disabled="ae.unavailable" value="" type="checkbox">
+          <input class="pull-right" :disabled="classObject.assigned" @change="unavailable" value="" type="checkbox">
           <div class="dienste">
             <div class="counter pull-left">0</div>
             <span :class="s" v-for="s in ae.services">{{ s[0] }}</span>
@@ -22,11 +22,19 @@ export default {
       `,
       props: ['ae'],
       computed: {
-        classObject: function () {
+        classObject () {
           return {
-            disabled: this.ae.unavailable,
-            assigned: this.ae.assigned
+            disabled: this.currentAssignment && this.currentAssignment.unavailable.includes(this.ae.name),
+            assigned: this.currentAssignment && this.ae.services.some(s => this.currentAssignment[s].includes(this.ae.name))
           }
+        },
+        currentAssignment () {
+          return this.$store.state.currentAssignment
+        }
+      },
+      methods: {
+        unavailable () {
+          this.$store.commit('toggleUnavailable', this.ae.name)
         }
       }
     }

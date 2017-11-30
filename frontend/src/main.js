@@ -2,9 +2,10 @@
 // (runtime-only or standalone) has been set in webpack.base.conf with an alias.
 import Vue from 'vue'
 import Vuex from 'vuex'
-import App from './App'
-import router from './router'
+import Smt from './components/Smt'
+import VueRouter from 'vue-router'
 import moment from 'moment'
+import findIndex from 'lodash/findIndex'
 // import {$} from './common'
 
 Vue.config.productionTip = false
@@ -19,7 +20,19 @@ Vue.filter('dateLong', function (value) {
   return moment(value).format('dddd, DD.MM.YYYY')
 })
 
+const routes = [
+  {
+    path: '/plan/:id',
+    component: Smt
+  }
+]
+
 Vue.use(Vuex)
+Vue.use(VueRouter)
+
+const router = new VueRouter({
+  routes
+})
 
 const blueprint = {
   sicherheit: 2,
@@ -42,18 +55,30 @@ const store = new Vuex.Store({
     },
     assign (state, payload) {
       state.currentAssignment[payload.service][payload.index] = payload.name
-      state.parts.find(p => p.date === state.current).assignments[payload.service][payload.index] = payload.name
+      state.currentAssignment[payload.service].splice(blueprint[payload.service])
+      let assignmentIndex = findIndex(state.assignments, a => a.date === state.current)
+      Vue.set(state.assignments, assignmentIndex, state.currentAssignment)
+    },
+    toggleUnavailable (state, name) {
+      const index = state.currentAssignment.unavailable.indexOf(name)
+      if (index !== -1) {
+        state.currentAssignment.unavailable.splice(index, 1)
+      } else {
+        state.currentAssignment.unavailable.push(name)
+      }
     },
     load (state, payload) {
       state.assignments = payload.parts.map(p => {
-        let {date, assignments, serviceweek} = p
+        let {date, assignments, serviceweek, unavailable} = p
         for (let s in blueprint) {
-          assignments[s].length = blueprint[s]
+          assignments[s].splice(blueprint[s])
         }
-        return {date, ...assignments, serviceweek}
+        return {date, ...assignments, serviceweek, unavailable}
       })
       state.parts = payload.parts
       state.title = payload.name
+      state.currentAssignment = state.assignments[0]
+      state.current = state.currentAssignment.date
     },
     'change-serviceweek' (state, dayPlan) {
       const date = moment(dayPlan.date)
@@ -71,6 +96,11 @@ new Vue({
   el: '#app',
   router,
   store,
-  template: '<App/>',
-  components: { App }
+  template: `
+  <div id="app">
+    <app-nav></app-nav>
+    <router-view></router-view>
+  </div>
+  `,
+  components: { Smt }
 })

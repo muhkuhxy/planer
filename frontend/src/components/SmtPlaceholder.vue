@@ -13,13 +13,22 @@ const ph = {
   <div class="col-md-4" :class="service">
     <h3>{{ service }}</h3>
       <div class="platzhalter" :data-service="service" :data-index="index" v-for="(name, index) in assignment">
-        <div class="remove" @click="remove()">
+        <div class="remove" @click="remove(index)">
           <span class="glyphicon glyphicon-remove"></span>
         </div>
         {{ name }}
     </div>
   </div>
-  `
+  `,
+  methods: {
+    remove (index) {
+      this.$store.commit('assign', {
+        name: '',
+        index,
+        service: this.service
+      })
+    }
+  }
 }
 
 export default Vue.component('smt-placeholder', {
