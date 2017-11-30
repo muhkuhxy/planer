@@ -12,7 +12,7 @@ const ph = {
   template: `
   <div class="col-md-4" :class="service">
     <h3>{{ service }}</h3>
-      <div class="platzhalter" :data-service="service" :data-index="index" v-for="(name, index) in assignment">
+      <div class="platzhalter" v-for="(name, index) in assignment" :data-service="service" :data-index="index" :class="{'bg-success': name}">
         <div class="remove" @click="remove(index)">
           <span class="glyphicon glyphicon-remove"></span>
         </div>
