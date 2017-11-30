@@ -1,5 +1,4 @@
 'use strict'
-import Vue from 'vue'
 import moment from 'moment'
 
 export const $ = (q, p = document) => p.querySelector(q)
@@ -10,9 +9,6 @@ export function parseDate (date) {
     moment(date, f)).filter(d => d.isValid())
   return maybeValid
 }
-
-/* eslint-disable-next-line no-new */
-export const bus = new Vue()
 
 export function req (method, url, data) {
   /* eslint-disable-next-line no-new */

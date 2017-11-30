@@ -1,4 +1,4 @@
-import {req} from './common'
+import {req} from '../lib/common'
 
 export default {
   getPlan: function (id) {

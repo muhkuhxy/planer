@@ -1,5 +1,5 @@
 <script>
-import {$, $$} from '../common'
+import {$, $$} from '../lib/common'
 
 export default {
   props: ['assignees'],

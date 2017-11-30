@@ -30,7 +30,7 @@ import SmtTable from './SmtTable'
 import SmtPlaceholder from './SmtPlaceholder'
 import StatusIndicator from './StatusIndicator'
 import SmtAssignees from './SmtAssignees'
-import service from '../plan.service'
+import service from '../api/plan.service'
 
 export default {
   components: {
