@@ -23,6 +23,10 @@ class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanReposit
     Ok(views.html.smt.overview(plans.list))
   }
 
+  def listJson = Authenticated {
+    Ok(Json.toJson(plans.list))
+  }
+
   def show(id: Long) = Authenticated {
     Ok(views.html.smt.plan(assigness.getAssignees, plans.find(id)))
   }

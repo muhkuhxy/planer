@@ -11,6 +11,7 @@ import play.api.mvc.Security._
 import play.api.data._
 import play.api.data.Forms._
 import play.api.db.Database
+import play.api.libs.json._
 import javax.inject._
 import org.mindrot.jbcrypt.BCrypt
 
@@ -56,6 +57,29 @@ class AuthenticationController @Inject()(db: Database) (val messagesApi: Message
         Redirect(routes.AuthenticationController.loginPage)
     }
   }
+
+  case class LoginData(name: String, password: String)
+  implicit val loginReads = Json.reads[LoginData]
+
+  def spaLogin = Authenticated(BodyParsers.parse.json) { implicit request =>
+    val result = request.body.validate[LoginData]
+    result.fold(
+      errors => {
+        val readableErrors = JsError.toJson(errors)
+        Logger.error(s"login error: $errors")
+        BadRequest(readableErrors)
+      },
+      data => {
+        checkCredentials(data.name, data.password) match {
+          case Some(user) =>
+            Ok.withSession(request.session + ("username" -> data.name))
+          case None =>
+            Unauthorized
+        }
+      }
+    )
+  }
+
 
   def logout = Authenticated { implicit request =>
     Ok("loggedout").withSession(request.session - "username")

@@ -41,11 +41,6 @@ export default {
   },
   data: function () {
     return {
-      assignments: {
-        sicherheit: [undefined, undefined],
-        mikro: [undefined, undefined],
-        tonanlage: [undefined]
-      },
       saveState: '',
       current: null,
       assignees: []

@@ -9,6 +9,7 @@ GET    /territory     controllers.territory.TerritoryController.overview
 GET    /territory/:id controllers.territory.TerritoryController.show(id: String)
 
 GET    /plan          controllers.smt.PlanController.overview
+GET    /api/plan      controllers.smt.PlanController.listJson
 POST   /plan          controllers.smt.PlanController.create
 GET    /plan/:id      controllers.smt.PlanController.show(id: Long)
 GET    /api/plan/:id  controllers.smt.PlanController.showJson(id: Long)
