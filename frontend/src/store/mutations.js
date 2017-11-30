@@ -47,5 +47,11 @@ export default {
       state.current = date.day(dow).format('YYYY-MM-DD')
     }
     dayPlan.date = date.day(dow).format('YYYY-MM-DD')
+  },
+  login (state, user) {
+    state.user = user
+  },
+  logout (state) {
+    state.user = ''
   }
 }

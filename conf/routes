@@ -1,7 +1,9 @@
 
 GET    /login         @controllers.AuthenticationController.loginPage
 POST   /login         @controllers.AuthenticationController.login
+POST   /api/login     @controllers.AuthenticationController.spaLogin
 GET    /logout        @controllers.AuthenticationController.logout
+GET    /api/logout    @controllers.AuthenticationController.logout
 
 GET    /              controllers.smt.PlanController.overview
 

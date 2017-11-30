@@ -42,17 +42,17 @@ export default {
   data: function () {
     return {
       saveState: '',
-      current: null,
       assignees: []
     }
   },
+  props: ['id'],
   computed: {
     title () {
       return this.$store.state.title
     }
   },
   created: function () {
-    service.getPlan(this.$route.params.id).then(p => {
+    service.getPlan(this.id).then(p => {
       this.$store.commit('load', p)
     }, err => console.log('failed to load plan', err))
     service.getAssignees().then(as => {
@@ -79,10 +79,6 @@ $icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
 @import '~bootstrap-sass/assets/stylesheets/bootstrap';
 @import "../assets/print";
 @import '../assets/settings';
-
-.date-range {
-   margin-bottom: 1em;
-}
 
 .termine {
 

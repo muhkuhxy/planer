@@ -1,7 +1,7 @@
 import {req} from '../lib/common'
 
 export default {
-  getPlan: function (id) {
+  getPlan (id) {
     return req.get('/api/plan/' + id).then(response => {
       let plan = JSON.parse(response.responseText)
       plan.parts.forEach(p => {
@@ -18,7 +18,10 @@ export default {
       return plan
     })
   },
-  save: function (plan) {
+  list () {
+    return req.get('/api/plan').then(r => JSON.parse(r.responseText))
+  },
+  save (plan) {
     if (!plan.id) {
       throw new Error('need plan with id')
     }

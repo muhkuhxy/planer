@@ -61,7 +61,7 @@ class AuthenticationController @Inject()(db: Database) (val messagesApi: Message
   case class LoginData(name: String, password: String)
   implicit val loginReads = Json.reads[LoginData]
 
-  def spaLogin = Authenticated(BodyParsers.parse.json) { implicit request =>
+  def spaLogin = Action(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[LoginData]
     result.fold(
       errors => {
@@ -72,7 +72,7 @@ class AuthenticationController @Inject()(db: Database) (val messagesApi: Message
       data => {
         checkCredentials(data.name, data.password) match {
           case Some(user) =>
-            Ok.withSession(request.session + ("username" -> data.name))
+            Ok(data.name).withSession(request.session + ("username" -> data.name))
           case None =>
             Unauthorized
         }
