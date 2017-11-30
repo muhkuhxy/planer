@@ -2,16 +2,25 @@
 import service from '../api/plan.service'
 import {req} from '../lib/common'
 import {handleUnauthorized} from '../lib/appHelpers'
+import moment from 'moment'
 
 export default {
   data () {
     return {
       plans: [],
-      loading: true
+      loading: true,
+      from: null,
+      to: null
     }
   },
   created () {
     this.load()
+  },
+  computed: {
+    validRange () {
+      const dates = [moment(this.from), moment(this.to)]
+      return dates.every(d => d.isValid())
+    }
   },
   methods: {
     load () {
@@ -29,6 +38,14 @@ export default {
       req.delete('/api/plan/' + plan.id).then(null, err => {
         console.log('couldn\'t delete plan', plan, err)
         this.plans.splice(index, 0, plan)
+      })
+    },
+    create () {
+      req.post('/api/plan', {
+        from: moment(this.from).format('YYYY-MM-DD'),
+        to: moment(this.to).format('YYYY-MM-DD')
+      }).then(r => {
+        this.load()
       })
     }
   }
@@ -57,16 +74,16 @@ export default {
         <div class="form-inline">
           <div class="form-group">
             <label>Von
-              <input type="date" name="from" value="">
+              <input type="date" v-model="from" value="">
             </label>
           </div>
           <div class="form-group">
             <label>Bis
-              <input type="date" name="to" value="">
+              <input type="date" v-model="to" value="">
             </label>
           </div>
         </div>
-        <button id="create" data-target="@controllers.smt.routes.PlanController.create" class="btn btn-primary" type="button" disabled>Anlegen</button>
+        <button @click="create" class="btn btn-primary" :disabled="!validRange">Anlegen</button>
       </div>
     </div>
 
