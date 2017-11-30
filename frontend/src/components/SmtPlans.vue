@@ -1,5 +1,7 @@
 <script>
 import service from '../api/plan.service'
+import {req} from '../lib/common'
+import {handleUnauthorized} from '../lib/appHelpers'
 
 export default {
   data () {
@@ -18,17 +20,16 @@ export default {
           this.plans = ps
           this.loading = false
         },
-        err => {
-          if (err.message === 'Unauthorized') {
-            this.$router.push('login')
-            console.log('unuath')
-          } else {
-            for (let f in err) {
-              console.log(f)
-            }
-          }
-        }
+        handleUnauthorized.bind(this)
       )
+    },
+    remove (plan) {
+      const index = this.plans.indexOf(plan)
+      this.plans.splice(index, 1)
+      req.delete('/api/plan/' + plan.id).then(null, err => {
+        console.log('couldn\'t delete plan', plan, err)
+        this.plans.splice(index, 0, plan)
+      })
     }
   }
 }
@@ -46,7 +47,7 @@ export default {
     <ul class="plan-list">
       <li v-for="plan in plans">{{ plan.name }}
         <router-link class="btn btn-info btn-sm" :to="{ name: 'plan', params: { id: plan.id } }">Bearbeiten</router-link>
-        <button class="plan-remove btn btn-warning btn-sm" @click="remove(plan.id)">Löschen</button>
+        <button class="plan-remove btn btn-warning btn-sm" @click="remove(plan)">Löschen</button>
       </li>
     </ul>
 

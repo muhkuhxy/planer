@@ -80,6 +80,9 @@ class AuthenticationController @Inject()(db: Database) (val messagesApi: Message
     )
   }
 
+  def user = Authenticated { implicit request =>
+    Ok(request.session("username"))
+  }
 
   def logout = Authenticated { implicit request =>
     Ok("loggedout").withSession(request.session - "username")

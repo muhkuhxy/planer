@@ -31,6 +31,7 @@ import SmtPlaceholder from './SmtPlaceholder'
 import StatusIndicator from './StatusIndicator'
 import SmtAssignees from './SmtAssignees'
 import service from '../api/plan.service'
+import {handleUnauthorized} from '../lib/appHelpers'
 
 export default {
   components: {
@@ -52,12 +53,14 @@ export default {
     }
   },
   created: function () {
-    service.getPlan(this.id).then(p => {
+    Promise.all([
+      service.getPlan(this.id),
+      service.getAssignees()
+    ]).then(res => {
+      let [p, as] = res
       this.$store.commit('load', p)
-    }, err => console.log('failed to load plan', err))
-    service.getAssignees().then(as => {
       this.assignees = as
-    })
+    }, handleUnauthorized.bind(this))
   },
   methods: {
     save: function () {

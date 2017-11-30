@@ -1,7 +1,7 @@
 <template>
   <nav class="navbar navbar-default">
     <ul class="nav navbar-nav">
-      <li><router-link to="plan">SMT-Plan</router-link></li>
+      <li><router-link to="/plan">SMT-Plan</router-link></li>
     </ul>
     <p class="state">
       <span v-if="user">
@@ -10,7 +10,7 @@
       </span>
       <span v-else>
         Nicht eingeloggt -
-        <router-link to="login">Login</router-link>
+        <router-link to="/login">Login</router-link>
       </span>
     </p>
   </nav>
@@ -19,6 +19,7 @@
 <script>
 import { mapState } from 'vuex'
 import { req } from '../lib/common'
+import { handleUnauthorized } from '../lib/appHelpers'
 
 export default {
   computed: mapState(['user']),
@@ -26,9 +27,14 @@ export default {
     logout () {
       req.get('/api/logout').then(r => {
         this.$store.commit('logout')
-        this.$router.push('login')
+        this.$router.push('/login')
       })
     }
+  },
+  created () {
+    req.get('/api/user').then(r => {
+      this.$store.commit('login', r.responseText)
+    }, handleUnauthorized.bind(this))
   }
 }
 </script>

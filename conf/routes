@@ -4,6 +4,7 @@ POST   /login         @controllers.AuthenticationController.login
 POST   /api/login     @controllers.AuthenticationController.spaLogin
 GET    /logout        @controllers.AuthenticationController.logout
 GET    /api/logout    @controllers.AuthenticationController.logout
+GET    /api/user      @controllers.AuthenticationController.user
 
 GET    /              controllers.smt.PlanController.overview
 
@@ -17,6 +18,7 @@ GET    /plan/:id      controllers.smt.PlanController.show(id: Long)
 GET    /api/plan/:id  controllers.smt.PlanController.showJson(id: Long)
 PUT    /plan/:id      controllers.smt.PlanController.save(id: Long)
 DELETE /plan/:id      controllers.smt.PlanController.remove(id: Long)
+DELETE /api/plan/:id  controllers.smt.PlanController.remove(id: Long)
 
 GET    /assignees     controllers.smt.AssigneeController.list
 GET    /api/assignees controllers.smt.AssigneeController.listJson
