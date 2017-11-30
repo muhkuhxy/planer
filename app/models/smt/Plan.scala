@@ -80,13 +80,13 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
             .executeInsert()
         }
       }
-      if (part.serviceweek) { // make day tuesday
+      if (part.serviceweek && part.date.getDayOfWeek() != DayOfWeek.TUESDAY) { // make day tuesday
         val previousTuesday = part.date.`with`(TemporalAdjusters.previous(DayOfWeek.TUESDAY))
         SQL("update schedule set day = {tuesday} where day = {date} and plan_id = {plan}")
           .on('tuesday -> toDate(previousTuesday), 'date -> toDate(part.date), 'plan -> plan.id)
           .executeUpdate()
       }
-      else if (part.date.getDayOfWeek() == DayOfWeek.TUESDAY) { // no longer serviceweek, make day friday
+      else if (!part.serviceweek && part.date.getDayOfWeek() == DayOfWeek.TUESDAY) { // no longer serviceweek, make day friday
         val nextFriday = part.date.`with`(TemporalAdjusters.next(DayOfWeek.FRIDAY))
         SQL("update schedule set day = {friday} where day = {date} and plan_id = {plan}")
           .on('friday -> toDate(nextFriday), 'date -> toDate(part.date), 'plan -> plan.id)
