@@ -25,11 +25,13 @@ export default {
 <template>
   <div class="container">
     <form>
-      <div>
-        <label>Name <input type="text" name="name" v-model="name"></label>
+      <div class="labeled-control">
+        <div><label for="name">Name</label></div>
+        <div><input type="text" name="name" v-model="name"></div>
       </div>
-      <div>
-        <label>Passwort <input type="password" name="password" v-model="password"></label>
+      <div class="labeled-control">
+        <div><label>Passwort</label></div>
+        <div><input type="password" name="password" v-model="password"></div>
       </div>
       <button type="submit" @click.prevent="login">Login</button>
     </form>
@@ -40,4 +42,8 @@ export default {
 $icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
 @import '~bootstrap-sass/assets/stylesheets/bootstrap';
 @import '../assets/settings';
+
+.labeled-control {
+  margin-bottom: 1rem;
+}
 </style>
