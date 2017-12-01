@@ -19,19 +19,11 @@ class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanReposit
   implicit val PlanRead = Json.format[Plan]
   implicit val RangeRead = Json.format[Range]
 
-  def overview = Authenticated {
-    Ok(views.html.smt.overview(plans.list))
-  }
-
-  def listJson = Authenticated {
+  def list = Authenticated {
     Ok(Json.toJson(plans.list))
   }
 
   def show(id: Long) = Authenticated {
-    Ok(views.html.smt.plan(assigness.getAssignees, plans.find(id)))
-  }
-
-  def showJson(id: Long) = Authenticated {
     val json = Json.toJson(plans.find(id))
     Ok(json)
   }

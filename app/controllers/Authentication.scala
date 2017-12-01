@@ -35,10 +35,6 @@ object AuthenticationController {
 class AuthenticationController @Inject()(db: Database) (val messagesApi: MessagesApi) extends Controller with Security with I18nSupport {
   import AuthenticationController._
 
-  def loginPage = Action { implicit request =>
-    Ok(views.html.login(loginForm))
-  }
-
   def checkCredentials(user: String, password: String): Option[String] = db.withConnection { implicit c =>
     val maybePasswd = SQL"select password from appuser where username = $user"
       .as(scalar[String].singleOpt)
@@ -47,21 +43,10 @@ class AuthenticationController @Inject()(db: Database) (val messagesApi: Message
     } yield user
   }
 
-  def login = Action(BodyParsers.parse.form(loginForm)) { implicit request =>
-    val loginData = request.body
-    checkCredentials(loginData.name, loginData.password) match {
-      case Some(user) =>
-        Redirect(smt.routes.PlanController.overview)
-          .withSession(request.session + ("username" -> loginData.name))
-      case None =>
-        Redirect(routes.AuthenticationController.loginPage)
-    }
-  }
-
   case class LoginData(name: String, password: String)
   implicit val loginReads = Json.reads[LoginData]
 
-  def spaLogin = Action(BodyParsers.parse.json) { implicit request =>
+  def login = Action(BodyParsers.parse.json) { implicit request =>
     val result = request.body.validate[LoginData]
     result.fold(
       errors => {

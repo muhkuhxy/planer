@@ -74,7 +74,7 @@ export default {
       const names = this.assignees.map(_ => _.name)
       const lookup = names.reduce((map, name, index) => { map[name] = index; return map }, {})
       const performLookup = n => lookup[n]
-      let p = [
+      return [
         parseInt(this.id),
         this.title,
         [
@@ -91,8 +91,6 @@ export default {
           ])
         ]
       ]
-      console.log(p)
-      return p
     }
   }
 }

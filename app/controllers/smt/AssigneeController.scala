@@ -11,10 +11,6 @@ import javax.inject._
 class AssigneeController @Inject()(assignees: AssigneeRepository) extends Controller with Security {
 
   def list = Authenticated {
-    Ok(views.html.smt.assignees(assignees.getAssignees))
-  }
-
-  def listJson = Authenticated {
     val json = Json.toJson(assignees.getAssignees)
     Ok(json)
   }

@@ -1,15 +1,14 @@
 <script>
 import Vue from 'vue'
-import dp from 'dot-prop'
 import {mapState} from 'vuex'
 
 const ph = {
   props: ['service'],
-  computed: {
-    assignment () {
-      return dp.get(this.$store.state.current, this.service)
+  computed: mapState({
+    assignment (state) {
+      return state.current && state.current[this.service]
     }
-  },
+  }),
   template: `
   <div class="col-md-4" :class="service">
     <h3>{{ service }}</h3>
