@@ -73,9 +73,7 @@ export default {
     serialize () {
       const names = this.assignees.map(_ => _.name)
       const lookup = names.reduce((map, name, index) => { map[name] = index; return map }, {})
-      const performLookup = function (n) {
-        return n in lookup ? lookup[n] : -1
-      }
+      const performLookup = n => lookup[n]
       let p = [
         parseInt(this.id),
         this.title,
