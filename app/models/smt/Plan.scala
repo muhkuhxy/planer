@@ -16,7 +16,7 @@ import scala.language.postfixOps
 import scala.language.implicitConversions
 
 case class Plan(id: Int, name: String, parts: List[Schedule])
-case class Schedule(date: LocalDate, unavailable: List[String], assignments: Map[String,List[String]], serviceweek: Boolean = false)
+case class Schedule(id: Int, date: LocalDate, unavailable: List[String], assignments: Map[String,List[String]])
 
 @ImplementedBy(classOf[DefaultPlanRepository])
 trait PlanRepository {
@@ -48,7 +48,7 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
         order by ss.shift
       """.as(str("service") ~ str("volunteer") map flatten *)
       val assignments = indexByFirst(assigned)
-      Schedule(when, unavailable, assignments)
+      Schedule(scheduleId, when, unavailable, assignments)
     }
     Plan(plan._1, plan._2, schedules)
   }
@@ -63,34 +63,22 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
     val volunteerIds = volunteersByName
     val serviceIds = servicesByName
     plan.parts.foreach { part =>
-      val scheduleId = SQL("select id from schedule where day = {date} and plan_id = {plan}")
-        .on('date -> toDate(part.date), 'plan -> plan.id)
-        .as(int("id").single)
-      val deleted = deleteScheduleRefs(scheduleId)
+      SQL("update schedule set day = {date} where id = {id}")
+        .on('date -> toDate(part.date), 'id -> part.id)
+        .executeUpdate()
+      val deleted = deleteScheduleRefs(part.id)
       Logger.debug(s"deleted (unavailable, assignments): $deleted")
       part.unavailable.foreach { who =>
         val whoId = volunteerIds(who)
-        SQL"insert into unavailable values ($scheduleId, $whoId)".executeInsert()
+        SQL"insert into unavailable values (${part.id}, $whoId)".executeInsert()
       }
       part.assignments.foreach { assignment =>
         val serviceId = serviceIds(assignment._1)
         assignment._2.zipWithIndex.filter( _._1.nonEmpty ) foreach { case (name, shift) =>
           val volunteerId = volunteerIds(name)
-          SQL"insert into schedule_services values ($volunteerId, $serviceId, $scheduleId, $shift)"
+          SQL"insert into schedule_services values ($volunteerId, $serviceId, ${part.id}, $shift)"
             .executeInsert()
         }
-      }
-      if (part.serviceweek && part.date.getDayOfWeek() != DayOfWeek.TUESDAY) { // make day tuesday
-        val previousTuesday = part.date.`with`(TemporalAdjusters.previous(DayOfWeek.TUESDAY))
-        SQL("update schedule set day = {tuesday} where day = {date} and plan_id = {plan}")
-          .on('tuesday -> toDate(previousTuesday), 'date -> toDate(part.date), 'plan -> plan.id)
-          .executeUpdate()
-      }
-      else if (!part.serviceweek && part.date.getDayOfWeek() == DayOfWeek.TUESDAY) { // no longer serviceweek, make day friday
-        val nextFriday = part.date.`with`(TemporalAdjusters.next(DayOfWeek.FRIDAY))
-        SQL("update schedule set day = {friday} where day = {date} and plan_id = {plan}")
-          .on('friday -> toDate(nextFriday), 'date -> toDate(part.date), 'plan -> plan.id)
-          .executeUpdate()
       }
     }
   }

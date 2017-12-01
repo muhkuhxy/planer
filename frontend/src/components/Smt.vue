@@ -32,6 +32,8 @@ import StatusIndicator from './StatusIndicator'
 import SmtAssignees from './SmtAssignees'
 import service from '../api/plan.service'
 import {handleUnauthorized} from '../lib/appHelpers'
+import {mapState} from 'vuex'
+import moment from 'moment'
 
 export default {
   components: {
@@ -47,11 +49,7 @@ export default {
     }
   },
   props: ['id'],
-  computed: {
-    title () {
-      return this.$store.state.title
-    }
-  },
+  computed: mapState(['title', 'assignments']),
   created: function () {
     Promise.all([
       service.getPlan(this.id),
@@ -65,13 +63,38 @@ export default {
   methods: {
     save: function () {
       this.saveState = 'working'
-      service.save(this.plan).then(result => {
+      service.save(this.serialize()).then(result => {
         this.saveState = result.status === 200 ? 'success' : 'error'
-        console.log(result)
       }, err => {
         this.saveState = 'error'
         console.log(err)
       })
+    },
+    serialize () {
+      const names = this.assignees.map(_ => _.name)
+      const lookup = names.reduce((map, name, index) => { map[name] = index; return map }, {})
+      const performLookup = function (n) {
+        return n in lookup ? lookup[n] : -1
+      }
+      let p = [
+        parseInt(this.id),
+        this.title,
+        [
+          names,
+          this.assignments.map(a => [
+            a.id,
+            moment(a.date).format('YYYY-MM-DD'),
+            [
+              a.sicherheit.map(performLookup),
+              a.mikro.map(performLookup),
+              a.tonanlage.map(performLookup)
+            ],
+            a.unavailable.map(performLookup)
+          ])
+        ]
+      ]
+      console.log(p)
+      return p
     }
   }
 }

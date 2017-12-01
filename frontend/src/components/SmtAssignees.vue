@@ -1,5 +1,6 @@
 <script>
 import {$, $$} from '../lib/common'
+import {mapState} from 'vuex'
 
 export default {
   props: ['assignees'],
@@ -13,7 +14,7 @@ export default {
       template: `
         <div draggable="true" :class="classObject">
           <span class="name">{{ ae.name }}</span>
-          <input class="pull-right" :disabled="classObject.assigned" @change="unavailable" value="" type="checkbox">
+          <input class="pull-right" :disabled="classObject.assigned" @change="unavailable" :checked="classObject.disabled" type="checkbox">
           <div class="dienste">
             <div class="counter pull-left">0</div>
             <span :class="s" v-for="s in ae.services">{{ s[0] }}</span>
@@ -24,13 +25,11 @@ export default {
       computed: {
         classObject () {
           return {
-            disabled: this.currentAssignment && this.currentAssignment.unavailable.includes(this.ae.name),
-            assigned: this.currentAssignment && this.ae.services.some(s => this.currentAssignment[s].includes(this.ae.name))
+            disabled: this.current && this.current.unavailable.includes(this.ae.name),
+            assigned: this.current && this.ae.services.some(s => this.current[s].includes(this.ae.name))
           }
         },
-        currentAssignment () {
-          return this.$store.state.currentAssignment
-        }
+        ...mapState(['current'])
       },
       methods: {
         unavailable () {

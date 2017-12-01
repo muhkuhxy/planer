@@ -17,13 +17,8 @@ export function req (method, url, data) {
     let req = new XMLHttpRequest()
     if (resolve) {
       req.addEventListener('load', function () {
-        if (this.status >= 500) {
-          reject(new Error('Server'))
-        } else if (this.status >= 400) {
-          if (this.status === 401) {
-            reject(new Error('Unauthorized'))
-          }
-          reject(new Error('Client'))
+        if (this.status >= 400) {
+          reject(new Error(this.status))
         }
         resolve(this)
       })

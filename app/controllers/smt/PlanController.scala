@@ -69,8 +69,9 @@ class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanReposit
       case _ => None
     }
     val schedules = parts(1).as[JsArray].value.map({
-        case JsArray(Seq(date, JsArray(assignments), JsArray(unavailable), JsBoolean(isServiceweek))) =>
-        Schedule(date.as[LocalDate],
+        case JsArray(Seq(JsNumber(id), date, JsArray(assignments), JsArray(unavailable))) =>
+        Schedule(id.intValue(),
+          date.as[LocalDate],
           unavailable.map(lookupName(_)).toList.flatten,
           assignments.zipWithIndex.map({
               case (serviceAssignment: JsArray, serviceIndex) => {
@@ -78,8 +79,7 @@ class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanReposit
                 val assgs = serviceAssignment.value.map(lookupName(_)).toList.flatten
                 s -> assgs
               }
-          }).toMap,
-          isServiceweek)
+          }).toMap)
       }).toList
     Plan(id, name, schedules)
   }

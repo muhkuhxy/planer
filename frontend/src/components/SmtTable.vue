@@ -1,5 +1,5 @@
 <template>
-  <div class="row termine" v-if="plan">
+  <div class="row termine">
     <div class="tr">
       <div class="th">Datum</div>
       <div class="th">Dienstwoche</div>
@@ -7,7 +7,7 @@
       <div class="th">Mikro</div>
       <div class="th">Tonanlage</div>
     </div>
-    <div class="tr" v-for="a in assignments" @click="select(a.date)" :class="{ 'bg-info': current === a.date }">
+    <div class="tr" v-for="a in assignments" @click="select(a)" :class="{ 'bg-info': current === a }">
       <div class="cell main middle">
         <div>{{ a.date | dateLong }}</div>
       </div>
@@ -72,34 +72,24 @@
 
 <script>
 import moment from 'moment'
+import { mapState } from 'vuex'
 
 export default {
-  name: 'smt-table',
   data: function () {
     return {
       today: moment().format('DD.MM.YYYY')
     }
   },
-  computed: {
-    plan () {
-      return this.$store.state.parts
-    },
-    assignments () {
-      return this.$store.state.assignments
-    },
-    current () {
-      return this.$store.state.current
-    }
-  },
+  computed: mapState(['assignments', 'current']),
   methods: {
-    select (date) {
-      this.$store.commit('select', date)
+    select (assignment) {
+      this.$store.commit('select', assignment)
     },
     dayOfWeek (d) {
       return moment(d).day()
     },
     change (a) {
-      this.$store.commit('change-serviceweek', a)
+      this.$store.commit('toggleServiceweek', a)
     }
   }
 }

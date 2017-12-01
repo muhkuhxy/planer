@@ -1,12 +1,13 @@
 <script>
 import Vue from 'vue'
 import dp from 'dot-prop'
+import {mapState} from 'vuex'
 
 const ph = {
   props: ['service'],
   computed: {
     assignment () {
-      return dp.get(this.$store.state.currentAssignment, this.service)
+      return dp.get(this.$store.state.current, this.service)
     }
   },
   template: `
@@ -32,14 +33,7 @@ const ph = {
 }
 
 export default Vue.component('smt-placeholder', {
-  computed: {
-    current () {
-      return dp.get(this.$store.state, 'current')
-    },
-    currentAssignment () {
-      return dp.get(this.$store.state.currentAssignment)
-    }
-  },
+  computed: mapState(['current']),
   components: {
     ph
   }
@@ -48,7 +42,7 @@ export default Vue.component('smt-placeholder', {
 
 <template>
   <div class="row planung" v-if="current">
-  <h2 class="col-xs-12">Plan für <span>{{ current | dateLong }}</span></h2>
+  <h2 class="col-xs-12">Plan für <span>{{ current.date | dateLong }}</span></h2>
   <ph service="sicherheit"></ph>
   <ph service="mikro"></ph>
   <ph service="tonanlage"></ph>

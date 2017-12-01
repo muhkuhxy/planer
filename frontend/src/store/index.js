@@ -8,10 +8,8 @@ export default new Vuex.Store({
   state: {
     user: '',
     title: '',
-    parts: [],
     current: null,
-    assignments: [],
-    currentAssignment: null
+    assignments: []
   },
   mutations
 })
