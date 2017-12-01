@@ -11,10 +11,11 @@ import javax.inject._
 class AssigneeController @Inject()(assignees: AssigneeRepository) extends Controller with Security {
 
   def list = Authenticated {
-    Ok(views.html.smt.assignees(assignees.getAssignees))
+    val json = Json.toJson(assignees.getAssignees)
+    Ok(json)
   }
 
-  implicit val assigneeReads = Json.reads[Assignee]
+  implicit val assigneeReads = Json.format[Assignee]
 
   def save = Authenticated(BodyParsers.parse.json) { implicit request =>
     val result = parseBody(request.body)

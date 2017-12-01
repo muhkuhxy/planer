@@ -1,20 +1,19 @@
 
-GET    /login         @controllers.AuthenticationController.loginPage
-POST   /login         @controllers.AuthenticationController.login
-GET    /logout        @controllers.AuthenticationController.logout
-
-GET    /              controllers.smt.PlanController.overview
+POST   /api/login     @controllers.AuthenticationController.login
+GET    /api/logout    @controllers.AuthenticationController.logout
+GET    /api/user      @controllers.AuthenticationController.user
 
 GET    /territory     controllers.territory.TerritoryController.overview
 GET    /territory/:id controllers.territory.TerritoryController.show(id: String)
 
-GET    /plan          controllers.smt.PlanController.overview
-POST   /plan          controllers.smt.PlanController.create
-GET    /plan/:id      controllers.smt.PlanController.show(id: Long)
-PUT    /plan/:id      controllers.smt.PlanController.save(id: Long)
-DELETE /plan/:id      controllers.smt.PlanController.remove(id: Long)
+GET    /api/plan      controllers.smt.PlanController.list
+POST   /api/plan      controllers.smt.PlanController.create
+GET    /api/plan/:id  controllers.smt.PlanController.show(id: Long)
+PUT    /api/plan/:id  controllers.smt.PlanController.save(id: Long)
+DELETE /api/plan/:id  controllers.smt.PlanController.remove(id: Long)
 
-GET    /assignees     controllers.smt.AssigneeController.list
+GET    /api/assignees controllers.smt.AssigneeController.list
 PUT    /assignees     controllers.smt.AssigneeController.save
 
-GET    /assets/*file  controllers.Assets.at(path="/public", file)
+GET    /              controllers.Assets.at(path="/public", file="index.html")
+GET    /*file         controllers.Assets.at(path="/public", file)

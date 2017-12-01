@@ -1,0 +1,18 @@
+$color-sicherheit: dodgerblue;
+$color-mikro: forestgreen;
+$color-tonanlage: deeppink;
+$color-platzhalter: gainsboro;
+$color-active: #d9edf7;
+$color-disabled: #dcadad;
+$color-assigned: gainsboro;
+
+$colors: (
+    sicherheit: dodgerblue,
+    mikro: forestgreen,
+    tonanlage: deeppink
+);
+$dienste: sicherheit, mikro, tonanlage;
+
+@mixin border-radius {
+   border-radius: 5px;
+}

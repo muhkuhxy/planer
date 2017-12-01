@@ -1,21 +1,14 @@
 name := "planer"
 
-version := "1.0.0-SNAPSHOT"
+version := "2.0.0-SNAPSHOT"
 
 scalaVersion := "2.11.7"
 
-import com.typesafe.sbt.traceur.Import.TraceurKeys._
-
 lazy val root = (project in file(".")).
-   enablePlugins(PlayScala, SbtWeb).
-   settings(
-      sourceFileNames in traceur in Assets := Seq(
-        "javascripts/assignees.js",
-        "javascripts/planer.js",
-        "javascripts/overview.js",
-        "javascripts/territory.js"
-      )
-   )
+   enablePlugins(PlayScala, SbtWeb)
+
+sources in (Compile, doc) := Seq.empty
+publishArtifact in (Compile, packageDoc) := false
 
 scalacOptions ++= Seq("-feature")
 
@@ -23,13 +16,7 @@ libraryDependencies ++= Seq(
    jdbc,
    "com.typesafe.play" %% "anorm" % "2.4.0",
    evolutions,
-   "org.webjars.bower" % "bootstrap-sass" % "3.3.6",
-   "org.webjars.npm" % "moment" % "2.11.1",
    "org.mindrot" % "jbcrypt" % "0.3m",
-   "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
-   "org.webjars.npm" % "rx" % "4.1.0",
-   "org.webjars.npm" % "jquery" % "3.2.1"
-   // "org.webjars.bower" % "list.js" % "1.5.0"
+   "org.postgresql" % "postgresql" % "9.4-1201-jdbc41"
 )
-
 
