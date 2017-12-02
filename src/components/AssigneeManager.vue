@@ -58,7 +58,6 @@ export default {
         this.saveState = 'error'
         console.log(e)
       }
-      this.load()
     },
     serialize () {
       return [
