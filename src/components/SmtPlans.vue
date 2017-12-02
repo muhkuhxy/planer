@@ -6,7 +6,7 @@ import moment from 'moment'
 import Datepicker from 'vue-datepicker-local'
 import Spinner from 'vue-simple-spinner'
 
-const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'Septebmer', 'Oktober', 'November', 'Dezember']
+const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
 
 const dateLocal = {
   dow: 1,
