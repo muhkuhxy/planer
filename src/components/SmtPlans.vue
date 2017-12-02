@@ -90,7 +90,7 @@ export default {
     <div class="row assignees">
       <div class="col-xs-12">
         <h2>Helfer</h2>
-        <a href="@controllers.smt.routes.AssigneeController.list">Helfer pflegen</a>
+        <router-link to="/assignees">Helfer pflegen</router-link>
       </div>
     </div>
   </div>

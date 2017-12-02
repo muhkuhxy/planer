@@ -18,8 +18,8 @@
 
     <div class="save">
       <button class="btn btn-primary" type="button" @click="save" :disabled="this.saveState === 'working'">Speichern</button>
-      <status-indicator :state="saveState" />
-        <a class="btn btn-default" href='mailto:@assignees.map(_.email).flatten.mkString(",")'>E-Mail</a>
+      <status-indicator :state="saveState"></status-indicator>
+      <a class="btn btn-default" href='mailto:@assignees.map(_.email).flatten.mkString(",")'>E-Mail</a>
     </div>
 
   </div>

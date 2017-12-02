@@ -3,13 +3,14 @@ import VueRouter from 'vue-router'
 import Smt from '../components/Smt'
 import SmtPlans from '../components/SmtPlans'
 import LoginForm from '../components/LoginForm'
+import AssigneeManager from '../components/AssigneeManager'
 
 Vue.use(VueRouter)
 
 const routes = [
   {
     path: '*',
-    redirect: 'plan'
+    redirect: '/plan'
   },
   {
     path: '/login',
@@ -24,6 +25,10 @@ const routes = [
     path: '/plan/:id',
     component: Smt,
     props: true
+  },
+  {
+    path: '/assignees',
+    component: AssigneeManager
   }
 ]
 

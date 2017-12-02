@@ -13,7 +13,7 @@ PUT    /api/plan/:id  controllers.smt.PlanController.save(id: Long)
 DELETE /api/plan/:id  controllers.smt.PlanController.remove(id: Long)
 
 GET    /api/assignees controllers.smt.AssigneeController.list
-PUT    /assignees     controllers.smt.AssigneeController.save
+PUT    /api/assignees controllers.smt.AssigneeController.save
 
 GET    /              controllers.Assets.at(path="/public", file="index.html")
 GET    /*file         controllers.Assets.at(path="/public", file)

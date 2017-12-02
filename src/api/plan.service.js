@@ -23,5 +23,8 @@ export default {
   },
   getAssignees: function () {
     return req.get('/api/assignees').then(r => JSON.parse(r.responseText))
+  },
+  saveAssignees (assignees) {
+    return req.put('/api/assignees', assignees)
   }
 }

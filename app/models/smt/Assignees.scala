@@ -15,7 +15,7 @@ import play.api.Logger
 import scala.language.postfixOps
 import scala.language.implicitConversions
 
-case class Assignee(name: String, services: Set[String], email: Option[String] = None)
+case class Assignee(id: Int = -1, name: String, services: Set[String], email: Option[String] = None)
 
 @ImplementedBy(classOf[DefaultAssigneeRepository])
 trait AssigneeRepository {
@@ -27,16 +27,17 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
 
   def getAssignees = db.withConnection { implicit c =>
     val result = SQL"""
-      select v.name as volunteer, s.name as service, v.email from volunteer v
+      select v.id, v.name as volunteer, s.name as service, v.email from volunteer v
       left join volunteer_service vs on v.id = vs.volunteer_id
       left join service s on s.id = vs.service_id
       where v.active
-    """.as(str("volunteer") ~
+    """.as(int("id") ~
+      str("volunteer") ~
       get[Option[String]]("service") ~
       get[Option[String]]("email") map (flatten) *)
     val assignees = for {
-      (name, bla) <- result.groupBy(_._1)
-    } yield Assignee(name, bla.map(_._2).flatten.toSet, bla.head._3)
+      ((id, name), bla) <- result.groupBy(x => (x._1, x._2))
+    } yield Assignee(id, name, bla.map(_._3).flatten.toSet, bla.head._4)
     assignees.toList.sortBy(_.name)
   }
 
@@ -47,11 +48,12 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
       def execute()
     }
     case class Update(as: Assignee) extends AssigneeOp {
-      val asId = volunteerIds(as.name)
+      require(as.id > 0)
+      val asId = as.id
       def execute {
         Logger.info(s"updating services $as with id $asId")
-        val result = SQL("update volunteer set email = {email} where id = {id}")
-          .on("email" -> as.email, "id" -> asId).executeUpdate()
+        val result = SQL("update volunteer set name = {name}, email = {email} where id = {id}")
+          .on("name" -> as.name, "email" -> as.email, "id" -> asId).executeUpdate()
         SQL"delete from volunteer_service where volunteer_id = $asId".executeUpdate()
         for(service <- as.services)
           SQL"insert into volunteer_service values ($asId, ${serviceIds(service)})".executeInsert()
@@ -79,24 +81,22 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
     }
     def calculateDifferences(old: List[Assignee], now: List[Assignee]): Seq[AssigneeOp] = {
       import scala.collection.mutable.ListBuffer
-      val oldByName = old.map( as => as.name -> as ).toMap
+      val oldMap = old.map( as => as.id -> as ).toMap
       var ops = ListBuffer.empty[AssigneeOp]
-      now.foreach { case as @ Assignee(name, services, email) =>
-        if(oldByName.contains(name)) {
-          val existing = oldByName(name)
-          if(existing.services != services || existing.email != email) {
+      now.foreach { case as @ Assignee(id, name, services, email) =>
+        if(id > 0) {
+          val existing = oldMap(id)
+          if(existing.services != services || existing.email != email || existing.name != name) {
             ops += Update(as)
           }
         } else {
           ops += Add(as)
         }
       }
-      val nowNames = now.map( as => as.name ).toSet
-      ops ++= old.filter { case Assignee(name, _, _) =>
-        !( nowNames contains name )
-      } map { case as @ Assignee(_, _, _) =>
-        Remove(as)
-      }
+      val nowIds = now.map(_.id).toSet
+      val oldIds = old.map(_.id).toSet
+      val removeIds = oldIds.diff(nowIds).filter(_ > 0)
+      ops ++= removeIds.map(oldMap).map(Remove)
       ops
     }
     val old = getAssignees

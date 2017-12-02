@@ -32,9 +32,10 @@ class AssigneeController @Inject()(assignees: AssigneeRepository) extends Contro
       if(em.nonEmpty) Some(em)
       else None
     body(1).as[JsArray].value.map(
-      v => Assignee(v(0).as[String],
-        v(1).as[JsArray].value.map(lookupService(_)).toSet,
-        parseEmail(v(2).as[String]))
+      v => Assignee(v(0).as[Int],
+        v(1).as[String],
+        v(2).as[JsArray].value.map(lookupService(_)).toSet,
+        parseEmail(v(3).as[String]))
     ).toList
   }
 
