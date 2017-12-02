@@ -2,6 +2,7 @@
 import Vue from 'vue'
 import service from '../api/plan.service'
 import StatusIndicator from './StatusIndicator'
+import Spinner from 'vue-simple-spinner'
 
 const SERVICES = ['sicherheit', 'mikro', 'tonanlage']
 
@@ -10,7 +11,8 @@ export default {
     return {
       assignees: [],
       newName: '',
-      saveState: ''
+      saveState: '',
+      loading: false
     }
   },
   created () {
@@ -18,6 +20,7 @@ export default {
   },
   methods: {
     load () {
+      this.loading = true
       service.getAssignees().then(as => {
         this.assignees = as.map(a => {
           const services = SERVICES.map(s => a.services.includes(s))
@@ -27,7 +30,7 @@ export default {
             editing: false
           }
         })
-      })
+      }).finally(_ => { this.loading = false })
     },
     toggleService (assignee, index) {
       Vue.set(assignee.services, index, !assignee.services[index])
@@ -70,7 +73,8 @@ export default {
     }
   },
   components: {
-    StatusIndicator
+    StatusIndicator,
+    Spinner
   }
 }
 </script>
@@ -85,8 +89,9 @@ export default {
     </header>
 
     <div class="row">
-      <div class="col-xs-12">
-        <table class="table table-condensed helpers">
+      <Spinner v-if="loading"></Spinner>
+      <div v-else class="col-xs-12">
+        <table class="table table-condensed">
           <thead>
             <tr>
               <th>Name</th>
@@ -94,8 +99,8 @@ export default {
               <th>Sicherheit</th>
               <th>Mikro</th>
               <th>Tonanlage</th>
-              <th class="text-center">Bearbeiten</th>
-              <th class="text-center">Entfernen</th>
+              <th class="text-center"></th>
+              <th class="text-right"></th>
             </tr>
           </thead>
           <tbody>
@@ -107,14 +112,14 @@ export default {
               <td v-for="(service, index) in assignee.services">
                 <input type="checkbox" :checked="service" @change="toggleService(assignee, index)">
               </td>
-              <td class="text-center">
-                <button class="btn btn-default" type="button" @click="assignee.editing = !assignee.editing">
-                  <i class="glyphicon " :class="{'glyphicon-pencil': !assignee.editing, 'glyphicon-ok': assignee.editing}"></i>
+              <td>
+                <button class="btn btn-xs btn-default" type="button" @click="assignee.editing = !assignee.editing">
+                  <i class="glyphicon" :class="{'glyphicon-pencil': !assignee.editing, 'glyphicon-ok': assignee.editing}"></i>
                 </button>
               </td>
-              <td class="text-center">
-                <button class="btn btn-danger remove" type="button" @click="remove(assignee)">
-                  <i class="glyphicon glyphicon-remove"></i>
+              <td>
+                <button class="btn btn-xs btn-danger" type="button" @click="remove(assignee)">
+                  <i class="glyphicon glyphicon-trash"></i>
                 </button>
               </td>
             </tr>
@@ -123,7 +128,8 @@ export default {
             <tr>
               <td class="add-helper">
                 <label>Hinzufügen <input type="text" v-model="newName"></label>
-                <button class="btn btn-default" @click="add"><span class="glyphicon glyphicon-plus-sign"></span></button></td>
+                <button class="btn btn-sm btn-default" @click="add"><span class="glyphicon glyphicon-plus-sign"></span></button></td>
+              <td></td>
               <td></td>
               <td></td>
               <td></td>
@@ -136,9 +142,7 @@ export default {
     </div>
 
     <div class="row save">
-      <div class="col-xs-12">
-      </div>
-      <div class="col-xs-12">
+      <div class="col-xs-12 text-center">
         <button class="btn btn-primary" type="button" @click="save" :disabled="this.saveState === 'working'">Speichern</button>
         <status-indicator :state="saveState"></status-indicator>
       </div>
@@ -148,4 +152,7 @@ export default {
 </template>
 
 <style lang="scss">
+.save {
+  margin-bottom: 2rem;
+}
 </style>

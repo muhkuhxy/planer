@@ -17,9 +17,8 @@ export default {
 }
 </script>
 
-<style lang="scss">
-$icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
-@import '~bootstrap-sass/assets/stylesheets/_bootstrap.scss';
+<style lang="scss" scoped>
+@import '../assets/style';
 
 .glyphicon {
   font-size: 1.5em;

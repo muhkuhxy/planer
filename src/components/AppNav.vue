@@ -39,10 +39,8 @@ export default {
 }
 </script>
 
-<style lang="scss">
-$icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
-@import '~bootstrap-sass/assets/stylesheets/bootstrap';
-@import '../assets/settings';
+<style lang="scss" scoped>
+@import '../assets/style';
 
 .state {
   float: right;

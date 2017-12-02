@@ -3,14 +3,26 @@ import service from '../api/plan.service'
 import {req} from '../lib/common'
 import {handleUnauthorized} from '../lib/appHelpers'
 import moment from 'moment'
+import Datepicker from 'vue-datepicker-local'
+import Spinner from 'vue-simple-spinner'
+
+const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'Septebmer', 'Oktober', 'November', 'Dezember']
+
+const dateLocal = {
+  dow: 1,
+  monthsHead: monthNames,
+  months: monthNames
+}
 
 export default {
   data () {
     return {
       plans: [],
-      loading: true,
+      loading: false,
       from: null,
-      to: null
+      to: null,
+      dateLocal,
+      range: []
     }
   },
   created () {
@@ -18,19 +30,22 @@ export default {
   },
   computed: {
     validRange () {
-      const dates = [moment(this.from), moment(this.to)]
-      return dates.every(d => d.isValid())
+      return this.range[0] &&
+        this.range[1] &&
+        moment(this.range[0]).isBefore(this.range[1], 'day')
     }
   },
+  watch: {
+    '$route': 'load'
+  },
   methods: {
-    load () {
-      service.list().then(
-        ps => {
-          this.plans = ps
-          this.loading = false
-        },
-        handleUnauthorized.bind(this)
-      )
+    async load () {
+      try {
+        this.loading = true
+        this.plans = await service.list().catch(handleUnauthorized.bind(this))
+      } finally {
+        this.loading = false
+      }
     },
     remove (plan) {
       const index = this.plans.indexOf(plan)
@@ -40,14 +55,17 @@ export default {
         this.plans.splice(index, 0, plan)
       })
     },
-    create () {
-      req.post('/api/plan', {
-        from: moment(this.from).format('YYYY-MM-DD'),
-        to: moment(this.to).format('YYYY-MM-DD')
-      }).then(r => {
-        this.load()
+    async create () {
+      await req.post('/api/plan', {
+        from: moment(this.range[0]).format('YYYY-MM-DD'),
+        to: moment(this.range[1]).format('YYYY-MM-DD')
       })
+      this.load()
     }
+  },
+  components: {
+    Datepicker,
+    Spinner
   }
 }
 </script>
@@ -61,29 +79,34 @@ export default {
       </div>
     </header>
 
-    <ul class="plan-list">
-      <li v-for="plan in plans">{{ plan.name }}
-        <router-link class="btn btn-info btn-sm" :to="{ name: 'plan', params: { id: plan.id } }">Bearbeiten</router-link>
-        <button class="plan-remove btn btn-warning btn-sm" @click="remove(plan)">Löschen</button>
-      </li>
-    </ul>
+    <Spinner v-if="loading"></Spinner>
+    <table class="table table-condensed" v-else>
+      <thead>
+        <tr>
+          <th>Zeitraum</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="plan in plans">
+          <td>{{ plan.name }}</td>
+          <td class="text-right">
+            <router-link class="btn btn-xs btn-default" :to="{ name: 'plan', params: { id: plan.id } }">
+              <i class="glyphicon glyphicon-pencil"></i>
+            </router-link>
+            <button class="btn btn-xs btn-danger" @click="remove(plan)">
+              <i class="glyphicon glyphicon-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
     <div class="row date-range">
       <div class="col-xs-12">
         <h2>Neuer Plan</h2>
-        <div class="form-inline">
-          <div class="form-group">
-            <label>Von
-              <input type="date" v-model="from" value="">
-            </label>
-          </div>
-          <div class="form-group">
-            <label>Bis
-              <input type="date" v-model="to" value="">
-            </label>
-          </div>
-        </div>
-        <button @click="create" class="btn btn-primary" :disabled="!validRange">Anlegen</button>
+        <Datepicker :local="dateLocal" format="DD.MM.YYYY" rangeSeparator="-" v-model="range"></Datepicker>
+        <button @click="create" class="btn create btn-primary" :disabled="!validRange">Anlegen</button>
       </div>
     </div>
 
@@ -96,12 +119,18 @@ export default {
   </div>
 </template>
 
-<style lang="scss">
-$icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
-@import '~bootstrap-sass/assets/stylesheets/bootstrap';
-@import '../assets/settings';
-
+<style lang="scss" scoped>
 .date-range {
-   margin-bottom: 1em;
+   margin-bottom: 1rem;
+ }
+.assignees {
+   margin-bottom: 3rem;
 }
+.btn.create {
+  margin-top: 1rem;
+  display: block;
+}
+</style>
+<style lang="scss">
+@import '../assets/style';
 </style>

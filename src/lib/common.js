@@ -10,6 +10,11 @@ export function parseDate (date) {
   return maybeValid
 }
 
+// eslint-disable-next-line no-extend-native
+Promise && (Promise.prototype.finally = function (block) {
+  this.then(x => block(x), x => block(x))
+})
+
 export function req (method, url, data) {
   /* eslint-disable-next-line no-new */
   return new Promise((resolve, reject) => {

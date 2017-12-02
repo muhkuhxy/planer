@@ -1,30 +1,3 @@
-<template>
-  <div class="container" id="wrapper">
-
-    <header class="row">
-      <div class="col-xs-12">
-        <h2>{{ title }}</h2>
-      </div>
-    </header>
-
-    <smt-table>
-    </smt-table>
-
-    <smt-placeholder>
-    </smt-placeholder>
-
-    <smt-assignees :assignees="assignees">
-    </smt-assignees>
-
-    <div class="save">
-      <button class="btn btn-primary" type="button" @click="save" :disabled="this.saveState === 'working'">Speichern</button>
-      <status-indicator :state="saveState"></status-indicator>
-      <a class="btn btn-default" href='mailto:@assignees.map(_.email).flatten.mkString(",")'>E-Mail</a>
-    </div>
-
-  </div>
-</template>
-
 <script>
 import SmtTable from './SmtTable'
 import SmtPlaceholder from './SmtPlaceholder'
@@ -34,33 +7,46 @@ import service from '../api/plan.service'
 import {handleUnauthorized} from '../lib/appHelpers'
 import {mapState} from 'vuex'
 import moment from 'moment'
+import Spinner from 'vue-simple-spinner'
 
 export default {
   components: {
     SmtTable,
     SmtPlaceholder,
     SmtAssignees,
-    StatusIndicator
+    StatusIndicator,
+    Spinner
   },
   data: function () {
     return {
       saveState: '',
-      assignees: []
+      assignees: [],
+      loading: false
     }
   },
   props: ['id'],
   computed: mapState(['title', 'assignments']),
-  created: function () {
-    Promise.all([
-      service.getPlan(this.id),
-      service.getAssignees()
-    ]).then(res => {
-      let [p, as] = res
-      this.$store.commit('load', p)
-      this.assignees = as
-    }, handleUnauthorized.bind(this))
+  created () {
+    this.load()
+  },
+  watch: {
+    '$route': 'load'
   },
   methods: {
+    load () {
+      this.loading = true
+      Promise.all([
+        service.getPlan(this.id),
+        service.getAssignees()
+      ]).then(res => {
+        let [p, as] = res
+        this.$store.commit('load', p)
+        this.assignees = as
+      }, handleUnauthorized.bind(this))
+        .finally(x => {
+          this.loading = false
+        })
+    },
     save: function () {
       this.saveState = 'working'
       service.save(this.serialize()).then(result => {
@@ -96,11 +82,37 @@ export default {
 }
 </script>
 
-<style lang="scss">
-$icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
-@import '~bootstrap-sass/assets/stylesheets/bootstrap';
-@import "../assets/print";
-@import '../assets/settings';
+<template>
+  <div class="container">
+
+    <Spinner v-if="loading"></Spinner>
+    <div v-else>
+      <header class="row">
+        <div class="col-xs-12">
+          <h2>{{ title }}</h2>
+        </div>
+      </header>
+
+      <smt-table>
+      </smt-table>
+
+      <smt-placeholder>
+      </smt-placeholder>
+
+      <smt-assignees :assignees="assignees">
+      </smt-assignees>
+    </div>
+
+    <div class="save">
+      <button class="btn btn-primary" type="button" @click="save" :disabled="this.saveState === 'working'">Speichern</button>
+      <status-indicator :state="saveState"></status-indicator>
+      <a class="btn btn-default" href='mailto:@assignees.map(_.email).flatten.mkString(",")'>E-Mail</a>
+    </div>
+  </div>
+</template>
+
+<style lang="scss" scoped>
+@import '../assets/style';
 
 .termine {
 

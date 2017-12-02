@@ -1,0 +1,13 @@
+$icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
+@import '~bootstrap-sass/assets/stylesheets/bootstrap';
+@import './settings';
+
+.table .btn-xs .glyphicon {
+  font-size: 18px;
+  margin-top: .25em;
+}
+
+.datepicker-range .datepicker-popup {
+  width: 415px !important;
+}
+

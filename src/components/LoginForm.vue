@@ -38,10 +38,8 @@ export default {
   </div>
 </template>
 
-<style lang="scss">
-$icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
-@import '~bootstrap-sass/assets/stylesheets/bootstrap';
-@import '../assets/settings';
+<style lang="scss" scoped>
+@import '../assets/style';
 
 .labeled-control {
   margin-bottom: 1rem;
