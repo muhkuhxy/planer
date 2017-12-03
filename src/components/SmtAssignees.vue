@@ -121,9 +121,8 @@ export default {
   li > div {
     margin: 0.5em;
     padding: 0.5em;
-    border: 1px solid black;
-    @include border-radius;
-    background-color: white;
+    background-color: #fafafa;
+    box-shadow: 1px 1px 4px #777;
 
     &.disabled {
       background-color: $color-disabled;
