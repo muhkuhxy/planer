@@ -23,7 +23,15 @@ export default {
     }
   },
   props: ['id'],
-  computed: mapState(['title', 'assignments', 'assignees']),
+  computed: {
+    ...mapState(['title', 'assignments', 'assignees']),
+    emails () {
+      return this.assignees.map(_ => _.email).filter(_ => _).join(',')
+    },
+    mailto () {
+      return 'mailto:' + this.emails + '?subject=Einteilung Sicherheit, Mikro, Tonanlage vom ' + this.title
+    }
+  },
   created () {
     this.load()
   },
@@ -85,7 +93,7 @@ export default {
     <div class="save">
       <button class="btn btn-primary" type="button" @click="save" :disabled="this.saveState === 'working'">Speichern</button>
       <status-indicator :state="saveState"></status-indicator>
-      <a class="btn btn-default" href='mailto:@assignees.map(_.email).flatten.mkString(",")'>E-Mail</a>
+      <a class="btn btn-default" :href="mailto">E-Mail</a>
     </div>
   </div>
 </template>
