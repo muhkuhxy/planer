@@ -18,11 +18,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '../assets/style';
+@import '~bootstrap-sass/assets/stylesheets/bootstrap/variables';
 
 .glyphicon {
-  font-size: 1.5em;
-  margin-top: 0.25em;
+  font-size: 30px;
+  vertical-align: middle;
 }
 
 .save-ok {

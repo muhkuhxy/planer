@@ -39,8 +39,6 @@ export default {
 </template>
 
 <style lang="scss" scoped>
-@import '../assets/style';
-
 .labeled-control {
   margin-bottom: 1rem;
 }

@@ -112,8 +112,6 @@ export default {
 </template>
 
 <style lang="scss" scoped>
-@import '../assets/style';
-
 .termine {
 
    tbody td {

@@ -131,6 +131,3 @@ export default {
   display: block;
 }
 </style>
-<style lang="scss">
-@import '../assets/style';
-</style>

@@ -2,8 +2,7 @@ import Vue from 'vue'
 import moment from 'moment'
 import store from './store'
 import router from './router'
-import Smt from './components/Smt'
-import AppNav from './components/AppNav'
+import App from './App'
 
 Vue.config.productionTip = false
 
@@ -22,11 +21,5 @@ new Vue({
   el: '#app',
   router,
   store,
-  template: `
-  <div id="app">
-    <AppNav></AppNav>
-    <router-view></router-view>
-  </div>
-  `,
-  components: { Smt, AppNav }
+  render: h => h(App)
 })
