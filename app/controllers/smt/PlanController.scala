@@ -15,6 +15,12 @@ class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanReposit
   implicit val ldRead = new Reads[LocalDate] {
     def reads(json: JsValue) = JsSuccess(LocalDate.parse(json.as[String]))
   }
+  implicit val optStringRead = new Reads[Option[String]] {
+    def reads(json: JsValue) = json match {
+      case JsString(s) if s.nonEmpty => JsSuccess(Some(s))
+      case _ => JsSuccess(None)
+    }
+  }
   implicit val SchedRead = Json.format[Schedule]
   implicit val PlanRead = Json.format[Plan]
   implicit val RangeRead = Json.format[Range]
@@ -61,17 +67,20 @@ class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanReposit
       case _ => None
     }
     val schedules = parts(1).as[JsArray].value.map({
-        case JsArray(Seq(JsNumber(id), date, JsArray(assignments), JsArray(unavailable))) =>
-        Schedule(id.intValue(),
-          date.as[LocalDate],
-          unavailable.map(lookupName(_)).toList.flatten,
-          assignments.zipWithIndex.map({
+        case JsArray(Seq(JsNumber(id), date, JsArray(assignments), JsArray(unavailable))) => {
+          Logger.debug(s"incoming assignments $assignments")
+          Schedule(id.intValue(),
+            date.as[LocalDate],
+            unavailable.map(lookupName(_)).toList.flatten,
+            assignments.zipWithIndex.map({
               case (serviceAssignment: JsArray, serviceIndex) => {
+                Logger.debug(s"$serviceAssignment, $serviceIndex")
                 val s: String = services(serviceIndex)
-                val assgs = serviceAssignment.value.map(lookupName(_)).toList.flatten
+                val assgs = serviceAssignment.value.map(lookupName(_)).toList
                 s -> assgs
               }
-          }).toMap)
+            }).toMap)
+        }
       }).toList
     Plan(id, name, schedules)
   }

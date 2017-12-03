@@ -14,9 +14,10 @@ import play.api.db._
 import play.api.Logger
 import scala.language.postfixOps
 import scala.language.implicitConversions
+import scala.collection.mutable.ListBuffer
 
 case class Plan(id: Int, name: String, parts: List[Schedule])
-case class Schedule(id: Int, date: LocalDate, unavailable: List[String], assignments: Map[String,List[String]])
+case class Schedule(id: Int, date: LocalDate, unavailable: List[String], assignments: Map[String,List[Option[String]]])
 
 @ImplementedBy(classOf[DefaultPlanRepository])
 trait PlanRepository {
@@ -41,13 +42,22 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
         where schedule_id = $scheduleId and v.active
       """.as(str(1) *)
       val assigned = SQL"""
-        select s.name service, v.name volunteer from schedule_services ss
+        select s.name service, v.name volunteer, ss.shift from schedule_services ss
         join service s on s.id = ss.service_id
         join volunteer v on v.id = ss.volunteer_id
         where schedule_id = $scheduleId and v.active
         order by ss.shift
-      """.as(str("service") ~ str("volunteer") map flatten *)
-      val assignments = indexByFirst(assigned)
+      """.as(str("service") ~ str("volunteer") ~ int("shift") map flatten *)
+      val assignments = assigned.groupBy(_._1).map {
+        case (service, nameWithIndex) => {
+          val size = nameWithIndex.map(_._3).max + 1
+          val assignees = ListBuffer.fill(size)(None: Option[String])
+          nameWithIndex.foreach({ case (_, n, i) =>
+            assignees(i) = Some(n)
+          })
+          service -> assignees.toList
+        }
+      }
       Schedule(scheduleId, when, unavailable, assignments)
     }
     Plan(plan._1, plan._2, schedules)
@@ -74,10 +84,14 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
       }
       part.assignments.foreach { assignment =>
         val serviceId = serviceIds(assignment._1)
-        assignment._2.zipWithIndex.filter( _._1.nonEmpty ) foreach { case (name, shift) =>
-          val volunteerId = volunteerIds(name)
-          SQL"insert into schedule_services values ($volunteerId, $serviceId, ${part.id}, $shift)"
-            .executeInsert()
+        Logger.debug(s"assignment $assignment")
+        assignment._2.zipWithIndex foreach {
+          case (Some(name), shift) =>
+            val volunteerId = volunteerIds(name)
+            Logger.debug(s"assign $name in shift $shift")
+            SQL"insert into schedule_services values ($volunteerId, $serviceId, ${part.id}, $shift)"
+              .executeInsert()
+          case _ =>
         }
       }
     }
