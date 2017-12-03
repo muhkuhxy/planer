@@ -48,7 +48,9 @@ export default {
       <div>{{ assignment.date | dateLong }}</div>
     </div>
     <div class="cell main vertical-middle serviceweek">
-      <input v-if="notSunday" type="checkbox" :checked="isTuesday" @change.stop.prevent="change()" />
+      <div>
+        <input v-if="notSunday" type="checkbox" :checked="isTuesday" @change.stop.prevent="change()" />
+      </div>
     </div>
     <div class="cell main col">
       <div class="cell sub" :class="classObject" data-service="sicherheit" data-index="0">{{ assignment.sicherheit[0] }}
