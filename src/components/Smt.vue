@@ -1,6 +1,5 @@
 <script>
 import SmtTable from './SmtTable'
-import SmtPlaceholder from './SmtPlaceholder'
 import StatusIndicator from './StatusIndicator'
 import SmtAssignees from './SmtAssignees'
 import service from '../api/plan.service'
@@ -11,7 +10,6 @@ import Spinner from 'vue-simple-spinner'
 export default {
   components: {
     SmtTable,
-    SmtPlaceholder,
     SmtAssignees,
     StatusIndicator,
     Spinner
