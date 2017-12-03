@@ -17,5 +17,7 @@ export default {
 <style lang="scss">
 $icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
 @import '~bootstrap-sass/assets/stylesheets/bootstrap';
-@import './assets/style'
+@import './assets/style';
+@import './assets/print';
+@import './assets/animations';
 </style>

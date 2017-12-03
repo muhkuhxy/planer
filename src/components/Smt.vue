@@ -4,7 +4,6 @@ import SmtPlaceholder from './SmtPlaceholder'
 import StatusIndicator from './StatusIndicator'
 import SmtAssignees from './SmtAssignees'
 import service from '../api/plan.service'
-import {handleUnauthorized} from '../lib/appHelpers'
 import {mapState} from 'vuex'
 import moment from 'moment'
 import Spinner from 'vue-simple-spinner'
@@ -20,12 +19,11 @@ export default {
   data: function () {
     return {
       saveState: '',
-      assignees: [],
       loading: false
     }
   },
   props: ['id'],
-  computed: mapState(['title', 'assignments']),
+  computed: mapState(['title', 'assignments', 'assignees']),
   created () {
     this.load()
   },
@@ -35,15 +33,8 @@ export default {
   methods: {
     load () {
       this.loading = true
-      Promise.all([
-        service.getPlan(this.id),
-        service.getAssignees()
-      ]).then(res => {
-        let [p, as] = res
-        this.$store.commit('load', p)
-        this.assignees = as
-      }, handleUnauthorized.bind(this))
-        .finally(x => {
+      this.$store.dispatch('loadPlan', this.id)
+        .finally(_ => {
           this.loading = false
         })
     },
@@ -87,20 +78,8 @@ export default {
 
     <Spinner v-if="loading"></Spinner>
     <div v-else>
-      <header class="row">
-        <div class="col-xs-12">
-          <h2>{{ title }}</h2>
-        </div>
-      </header>
-
-      <smt-table>
-      </smt-table>
-
-      <smt-placeholder>
-      </smt-placeholder>
-
-      <smt-assignees :assignees="assignees">
-      </smt-assignees>
+      <SmtTable/>
+      <SmtAssignees :assignees="assignees"/>
     </div>
 
     <div class="save">
@@ -112,26 +91,6 @@ export default {
 </template>
 
 <style lang="scss" scoped>
-.termine {
-
-   tbody td {
-      vertical-align: middle !important;
-   }
-
-   tbody tr {
-      cursor: pointer;
-   }
-
-   @media screen {
-      max-height: 200px;
-      overflow-y: scroll;
-
-      .printing-date {
-         display: none;
-      }
-   }
-}
-
 .save {
   padding: 3rem;
   display: flex;

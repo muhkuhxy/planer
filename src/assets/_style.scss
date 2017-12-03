@@ -8,3 +8,10 @@
   width: 415px !important;
 }
 
+.vertical-middle {
+  display: flex;
+  align-items: center;
+  > * {
+    flex: 1 0 100%;
+  }
+}

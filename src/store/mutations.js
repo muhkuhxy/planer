@@ -1,8 +1,7 @@
-import Vue from 'vue'
 import moment from 'moment'
-import findIndex from 'lodash/findIndex'
+import find from 'lodash/find'
 
-const slots = {
+const SLOTS = {
   sicherheit: 2,
   mikro: 2,
   tonanlage: 1
@@ -13,10 +12,15 @@ export default {
     state.current = current
   },
   assign (state, payload) {
+    const assignedPrevious = state.current[payload.service][payload.index]
+    if (assignedPrevious) {
+      find(state.assignees, a => a.name === assignedPrevious).timesAssigned -= 1
+    }
+    if (payload.name) {
+      find(state.assignees, a => a.name === payload.name).timesAssigned += 1
+    }
     state.current[payload.service][payload.index] = payload.name
-    state.current[payload.service].splice(slots[payload.service])
-    let assignmentIndex = findIndex(state.assignments, a => a.date === state.current)
-    Vue.set(state.assignments, assignmentIndex, state.current)
+    state.current[payload.service].splice(SLOTS[payload.service])
   },
   toggleUnavailable (state, name) {
     const list = state.current.unavailable
@@ -30,7 +34,21 @@ export default {
   load (state, payload) {
     state.assignments = payload.parts
     state.title = payload.name
-    state.current = state.assignments[0]
+    const services = Object.keys(SLOTS)
+    const timesAssigned = state.assignments.reduce((map, assignment) => {
+      services.forEach(service => {
+        assignment[service].forEach(name => {
+          name && (name in map ? map[name]++ : map[name] = 1)
+        })
+      })
+      return map
+    }, {})
+    state.assignees.forEach(a => {
+      a.timesAssigned = a.name in timesAssigned ? timesAssigned[a.name] : 0
+    })
+  },
+  loadAssignees (state, payload) {
+    state.assignees = payload
   },
   toggleServiceweek (state, dayPlan) {
     const date = moment(dayPlan.date)

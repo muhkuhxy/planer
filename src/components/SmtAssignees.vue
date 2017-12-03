@@ -1,42 +1,18 @@
 <script>
 import {$, $$} from '../lib/common'
+import Assignee from './Assignee.vue'
 import {mapState} from 'vuex'
 
 export default {
   props: ['assignees'],
   computed: {
-    current () {
-      return this.$store.state.current
+    ...mapState(['current', 'assignments']),
+    blocking () {
+      return !(this.assignments && this.assignments.indexOf(this.current) > -1)
     }
   },
   components: {
-    assignee: {
-      template: `
-        <div draggable="true" :class="classObject">
-          <span class="name">{{ ae.name }}</span>
-          <input class="pull-right" :disabled="classObject.assigned" @change="unavailable" :checked="classObject.disabled" type="checkbox">
-          <div class="dienste">
-            <div class="counter pull-left">0</div>
-            <span :class="s" v-for="s in ae.services">{{ s[0] }}</span>
-          </div>
-        </div>
-      `,
-      props: ['ae'],
-      computed: {
-        classObject () {
-          return {
-            disabled: this.current && this.current.unavailable.includes(this.ae.name),
-            assigned: this.current && this.ae.services.some(s => this.current[s].includes(this.ae.name))
-          }
-        },
-        ...mapState(['current'])
-      },
-      methods: {
-        unavailable () {
-          this.$store.commit('toggleUnavailable', this.ae.name)
-        }
-      }
-    }
+    Assignee
   },
   created: function () {
     let dragged
@@ -61,7 +37,7 @@ export default {
     }
 
     document.addEventListener('dragenter', e => {
-      if (e.target.classList && e.target.classList.contains('platzhalter') && classesOverlap(e.target, dragged)) {
+      if (e.target.classList.contains('platzhalter') && classesOverlap(e.target, dragged)) {
         e.target.style.backgroundColor = '#aaa'
       } else {
         e.preventDefault()
@@ -100,16 +76,17 @@ export default {
       <h2>Helfer</h2>
       <ul class="draggable">
         <li v-for="assignee in assignees">
-          <assignee :ae="assignee"/>
+          <Assignee :ae="assignee"/>
         </li>
       </ul>
-      <div v-if="!current" class="blocker">Datum auswählen</div>
+      <div v-if="blocking" class="blocker">Datum auswählen</div>
     </div>
   </div>
 </template>
 
 <style lang="scss">
-@import '../assets/settings';
+@import '../assets/mixins';
+@import '../assets/variables';
 
 .kandidaten {
 

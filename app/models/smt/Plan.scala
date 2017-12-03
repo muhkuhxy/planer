@@ -94,7 +94,7 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
   def create(from: LocalDate, to: LocalDate) = db.withConnection { implicit c =>
     Logger.debug(s"formatted to ${to.format(dateFormat)}")
     val planId = SQL("insert into plan(name) values ({name})")
-      .on('name -> s"Plan vom ${from.format(dateFormat)} bis ${to.format(dateFormat)}")
+      .on('name -> s"${from.format(dateFormat)} bis ${to.format(dateFormat)}")
       .executeInsert().get
     val dates = daysBetween(from, to, Seq(DayOfWeek.FRIDAY, DayOfWeek.SUNDAY))
     dates.foreach { date =>
@@ -105,12 +105,15 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
   }
 
   def daysBetween(from: LocalDate, to: LocalDate, weekDays: Seq[DayOfWeek]): Stream[LocalDate] = {
-    val adjusters = weekDays map {
+    lazy val loopingWeekdays: Stream[DayOfWeek] = weekDays.toStream #::: loopingWeekdays
+    // drop first day of week if from is the same DOW, otherwise we skip e.g. from Friday to Friday
+    // from will be included anyway b/c of scanLeft
+    val fixedWeekdays = loopingWeekdays.dropWhile(dow => dow == from.getDayOfWeek)
+    val nextWeekday = fixedWeekdays map {
       TemporalAdjusters.next
     }
-    lazy val loopingAdjusters: Stream[TemporalAdjuster] = adjusters.toStream #::: loopingAdjusters
 
-    loopingAdjusters.scanLeft(from)((date, adjuster) => {
+    nextWeekday.scanLeft(from)((date, adjuster) => {
       date.`with`(adjuster)
     }).dropWhile(d => !weekDays.contains(d.getDayOfWeek))
       .takeWhile(d => d.isBefore(to) || d.isEqual(to))

@@ -105,7 +105,7 @@ export default {
     <div class="row date-range">
       <div class="col-xs-12">
         <h2>Neuer Plan</h2>
-        <Datepicker :local="dateLocal" format="DD.MM.YYYY" rangeSeparator="-" v-model="range"></Datepicker>
+        <Datepicker :local="dateLocal" format="DD.MM.YYYY" rangeSeparator="bis" v-model="range"></Datepicker>
         <button @click="create" class="btn create btn-primary" :disabled="!validRange">Anlegen</button>
       </div>
     </div>

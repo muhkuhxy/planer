@@ -1,52 +1,38 @@
 @media print {
 
-    @page {
-       size: A4;
-    }
+  @page {
+    size: A4;
+  }
 
-    body {
-       font-family: Calibri, Candara, Segoe, "Segoe UI", Optima, Arial, sans-serif !important;
-//       line-height: 1.6 !important; // trifft td nicht wegen bootstrap
-       font-size: 13pt;
-    }
+  body {
+    font-family: Calibri, Candara, Segoe, "Segoe UI", Optima, Arial, sans-serif !important;
+    line-height: 1.6 !important; // trifft td nicht wegen bootstrap
+    font-size: 15pt;
+  }
 
-    header, .row:not(.termine), .save, .serviceweek {
-       display: none !important;
-    }
+  .title, .row:not(.termine), .save, .serviceweek, .remove {
+    display: none !important;
+  }
 
-    table {
-       border-collapse: collapse;
-       margin: 0 auto;
+  .th, .cell.main {
+    width: 25%;
+    padding: 0px 8px;
+    //width: 12.5rem !important;
+    border-bottom: 1px solid black;
+    border-right: 1px solid black;
+    text-align: left;
+    &:first-child {
+      border-left: 1px solid black;
     }
+  }
 
-    th, td {
-       padding: 0px 8px !important;
-       width: 12.5rem !important;
-    }
+  .tr:first-of-type .th {
+    border-top: 1px solid black;
+  }
 
-    thead th, thead td {
-       border: 1px solid black !important;
-       text-align: left;
-    }
-
-    tbody td[rowspan] {
-       border: 1px solid black;
-    }
-
-    tbody tr:nth-child(odd) td:not([rowspan]) {
-       border-bottom: 0 !important;
-       border-left: 1px solid black;
-    }
-
-    tbody tr:nth-child(even) td {
-       border-top: 0;
-       border-bottom: 1px solid black;
-       border-left: 1px solid black;
-    }
-
-    .printing-date {
-       $margin: 2rem;
-       margin-top: $margin;
-       margin-left: $margin;
-    }
+  .printing-date {
+    $margin: 2rem;
+    margin-top: $margin;
+    margin-left: $margin;
+  }
 }

@@ -37,16 +37,6 @@ export default {
 
 .working {
   display: inline-block;
-  animation: 2s linear 0s infinite normal turnit;
-}
-
-@keyframes turnit {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
+  animation: 2s linear 0s infinite normal full-rotation;
 }
 </style>

@@ -49,7 +49,7 @@ export default Vue.component('smt-placeholder', {
 </template>
 
 <style lang="scss">
-@import '../assets/settings';
+@import '../assets/variables';
 
 .platzhalter {
   width: 100%;
@@ -71,7 +71,6 @@ export default Vue.component('smt-placeholder', {
     background-color: $color-platzhalter;
   }
 
-  @include border-radius;
 }
 
 @each $dienst in $dienste {

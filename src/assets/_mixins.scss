@@ -1,0 +1,14 @@
+@mixin smt-column-width {
+  &:first-child {
+    width: 30%;
+  }
+  width: calc(70%/4);
+}
+@mixin smt-table-row {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+}
+@mixin border-radius {
+   border-radius: 5px;
+}
