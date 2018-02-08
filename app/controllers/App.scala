@@ -7,6 +7,7 @@ import play.api.libs.functional.syntax._
 import play.api.mvc.{Result => PlayResult, Request}
 import play.api.mvc.Results._
 import play.api.Logger
+import scala.language.implicitConversions
 
 object Application {
   sealed abstract class DomainError
