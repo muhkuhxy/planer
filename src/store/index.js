@@ -11,7 +11,8 @@ export default new Vuex.Store({
     title: '',
     current: null,
     assignees: [],
-    assignments: []
+    assignments: [],
+    services: []
   },
   mutations,
   actions,

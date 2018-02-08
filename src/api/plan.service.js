@@ -1,16 +1,23 @@
 import {req} from '../lib/common'
 
 export default {
-  getPlan (id) {
+  getPlan (id, assignees) {
+    const indexedAssignees = assignees.reduce((map, value) => {
+      map[value.id] = value
+      return map
+    }, {})
     return req.get('/api/plan/' + id).then(response => {
       let plan = JSON.parse(response.responseText)
       plan.parts = plan.parts.map(p => {
-        let {sicherheit = [], mikro = [], tonanlage = []} = p.assignments
-        sicherheit.length = 2
-        mikro.length = 2
-        tonanlage.length = 1
         let {id, date, serviceweek, unavailable} = p
-        return {id, date, sicherheit, mikro, tonanlage, serviceweek, unavailable}
+        let part = {id, date, serviceweek, unavailable}
+        plan.services.forEach(service => {
+          let assignment = p.assignments.find(elem => elem.s === service.id)
+          let shifts = assignment ? assignment.shifts || [] : []
+          shifts.length = service.slots
+          part[service.name] = shifts.map(s => indexedAssignees[s])
+        })
+        return part
       })
       return plan
     })
@@ -19,7 +26,7 @@ export default {
     return req.get('/api/plan').then(r => JSON.parse(r.responseText))
   },
   save (plan) {
-    return req.put('/api/plan/' + plan[0], plan)
+    return req.put('/api/plan/' + plan.id, plan)
   },
   getAssignees: function () {
     return req.get('/api/assignees').then(r => JSON.parse(r.responseText))

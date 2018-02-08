@@ -22,7 +22,7 @@ export default {
   },
   props: ['id'],
   computed: {
-    ...mapState(['title', 'assignments', 'assignees']),
+    ...mapState(['title', 'assignments', 'assignees', 'services']),
     emails () {
       return this.assignees.map(_ => _.email).filter(_ => _).join(',')
     },
@@ -54,26 +54,22 @@ export default {
       })
     },
     serialize () {
-      const names = this.assignees.map(_ => _.name)
-      const lookup = names.reduce((map, name, index) => { map[name] = index; return map }, {})
-      const performLookup = n => lookup[n]
-      return [
-        parseInt(this.id),
-        this.title,
-        [
-          names,
-          this.assignments.map(a => [
-            a.id,
-            moment(a.date).format('YYYY-MM-DD'),
-            [
-              a.sicherheit.map(performLookup),
-              a.mikro.map(performLookup),
-              a.tonanlage.map(performLookup)
-            ],
-            a.unavailable.map(performLookup)
-          ])
-        ]
-      ]
+      return {
+        id: parseInt(this.id),
+        parts: this.assignments.map(a => {
+          return {
+            id: a.id,
+            date: moment(a.date).format('YYYY-MM-DD'),
+            assignments: this.services.map(service => {
+              return {
+                s: service.id,
+                shifts: a[service.name].map(a => a && a.id)
+              }
+            }),
+            unavailable: a.unavailable
+          }
+        })
+      }
     }
   }
 }

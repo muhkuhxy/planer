@@ -6,15 +6,15 @@ export default {
   computed: {
     classObject () {
       return {
-        disabled: this.current && this.current.unavailable.includes(this.ae.name),
-        assigned: this.current && this.ae.services.some(s => this.current[s].includes(this.ae.name))
+        disabled: this.current && this.current.unavailable.includes(this.ae.id),
+        assigned: this.current && this.ae.services.some(s => this.current[s].includes(this.ae))
       }
     },
     ...mapState(['current'])
   },
   methods: {
     unavailable () {
-      this.$store.commit('toggleUnavailable', this.ae.name)
+      this.$store.commit('toggleUnavailable', this.ae.id)
     }
   }
 }

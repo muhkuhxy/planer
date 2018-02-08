@@ -8,19 +8,19 @@ import play.api.libs.functional.syntax._
 import models.smt._
 import javax.inject._
 
-class AssigneeController @Inject()(assignees: AssigneeRepository) extends Controller with Security {
+class AssigneeController @Inject()(assignees: AssigneeRepository, val controllerComponents: ControllerComponents) extends Security {
 
-  def list = Authenticated {
+  implicit val assigneeFormat = Json.format[Assignee]
+
+  def list = isAuthenticated { _ =>
     val json = Json.toJson(assignees.getAssignees)
     Ok(json)
   }
 
-  implicit val assigneeReads = Json.format[Assignee]
-
-  def save = Authenticated(BodyParsers.parse.json) { implicit request =>
-    val result = parseBody(request.body)
-    assignees.save(result)
-    Ok("helpers saved")
+  def save = isAuthenticated(parse.json) { request =>
+      val result = parseBody(request.body)
+      assignees.save(result)
+      Ok("helpers saved")
   }
 
   private def parseBody(body: JsValue) = {

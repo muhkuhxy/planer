@@ -35,6 +35,7 @@ export function req (method, url, data) {
     }
     req.open(method, url)
     req.setRequestHeader('content-type', 'application/json')
+    req.setRequestHeader('csrf-token', 'nocheck')
     let json
     if (data) {
       json = JSON.stringify(data)

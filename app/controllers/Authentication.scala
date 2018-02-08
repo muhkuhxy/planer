@@ -1,75 +1,79 @@
 package controllers
 
+import app.Application._
 import anorm._
 import anorm.SqlParser._
-import play.api.mvc._
+import cats.{Inject => _, _}
+import cats.data._
+import cats.implicits._
+import javax.inject._
+import org.mindrot.jbcrypt.BCrypt
+import play.api.mvc
+import play.api.mvc.{Result => PlayResult, _}
 import play.api.Logger
 import play.api.i18n._
 import play.api.mvc.Results._
-import play.api.Play.current
 import play.api.mvc.Security._
 import play.api.data._
+import play.filters.csrf._
 import play.api.data.Forms._
 import play.api.db.Database
 import play.api.libs.json._
-import javax.inject._
-import org.mindrot.jbcrypt.BCrypt
 
-trait Security {
+trait Security extends BaseController {
   def getUserFromRequest(req: RequestHeader): Option[String] = req.session.get("username")
   def onUnauthorized(req: RequestHeader) = Unauthorized
-  object Authenticated extends AuthenticatedBuilder(getUserFromRequest, onUnauthorized)
+  def isAuthenticated(f: => Request[AnyContent] => mvc.Result) = {
+    Authenticated(getUserFromRequest, onUnauthorized) { user =>
+      Action(request => f(request))
+    }
+  }
+  def isAuthenticated[T](b: BodyParser[T])(f: => Request[T] => mvc.Result) = {
+    Authenticated(getUserFromRequest, onUnauthorized) { user =>
+      Action(b)(request => f(request))
+    }
+  }
 }
 
 object AuthenticationController {
-  case class LoginForm(name: String, password: String)
-  val loginForm = Form(
-    mapping(
-      "name"->text,
-      "password"->text
-    )(LoginForm.apply)(LoginForm.unapply)
-  )
+  case class LoginData(name: String, password: String)
 
+  implicit val loginReads = Json.reads[LoginData]
 }
 
-class AuthenticationController @Inject()(db: Database) (val messagesApi: MessagesApi) extends Controller with Security with I18nSupport {
+class AuthenticationController @Inject()(db: Database, val controllerComponents: ControllerComponents) extends Security with I18nSupport {
   import AuthenticationController._
 
-  def checkCredentials(user: String, password: String): Option[String] = db.withConnection { implicit c =>
-    val maybePasswd = SQL"select password from appuser where username = $user"
+  def checkCredentials(data: LoginData): Boolean = db.withConnection { implicit c =>
+    SQL"select password from appuser where username = ${data.name}"
       .as(scalar[String].singleOpt)
-    for {
-      hashed <- maybePasswd if BCrypt.checkpw(password, hashed)
-    } yield user
+      .map(hashedPw => BCrypt.checkpw(data.password, hashedPw))
+      .getOrElse(false)
   }
 
-  case class LoginData(name: String, password: String)
-  implicit val loginReads = Json.reads[LoginData]
+  def login = Action(parse.json) { implicit request =>
 
-  def login = Action(BodyParsers.parse.json) { implicit request =>
-    val result = request.body.validate[LoginData]
-    result.fold(
-      errors => {
-        val readableErrors = JsError.toJson(errors)
-        Logger.error(s"login error: $errors")
-        BadRequest(readableErrors)
-      },
-      data => {
-        checkCredentials(data.name, data.password) match {
-          case Some(user) =>
-            Ok(data.name).withSession(request.session + ("username" -> data.name))
-          case None =>
-            Unauthorized
-        }
+    def startSession(user: String) = Ok(user).withSession(request.session + ("username" -> user))
+
+    def verifyCredentials(isValid: Boolean, user: String): Either[DomainError, PlayResult] =
+      if (isValid) {
+        Right(startSession(user))
+      } else {
+        Left(InvalidCredentials)
       }
-    )
+
+    for {
+      data <- parseBody[LoginData]
+      valid = checkCredentials(data)
+      result <- verifyCredentials(valid, data.name)
+    } yield result
   }
 
-  def user = Authenticated { implicit request =>
+  def user = isAuthenticated { implicit request =>
     Ok(request.session("username"))
   }
 
-  def logout = Authenticated { implicit request =>
-    Ok("loggedout").withSession(request.session - "username")
+  def logout = isAuthenticated { implicit request =>
+    Ok("loggedout").withNewSession
   }
 }

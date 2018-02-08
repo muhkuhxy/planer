@@ -5,16 +5,6 @@
 # https://docs.vagrantup.com.
 Vagrant.configure("2") do |config|
 
-   config.vm.define "planer-dev" do |dev|
-      dev.vm.provider "docker" do |d|
-         d.create_args = ["-dit"]
-         d.name = "planer-dev"
-         d.build_dir = "."
-         d.ports = ["9000:9000"]
-         d.link("planer-db:planer-db")
-      end
-   end
-
    config.vm.define "planer-db" do |db|
       db.vm.provider "docker" do |d|
          d.name = "planer-db"

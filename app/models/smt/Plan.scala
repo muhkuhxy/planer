@@ -16,14 +16,21 @@ import scala.language.postfixOps
 import scala.language.implicitConversions
 import scala.collection.mutable.ListBuffer
 
-case class Plan(id: Int, name: String, parts: List[Schedule])
-case class Schedule(id: Int, date: LocalDate, unavailable: List[String], assignments: Map[String,List[Option[String]]])
+case class Plan(id: Int, name: String, parts: List[Schedule], services: List[Service])
+case class Schedule(id: Int, date: LocalDate, unavailable: List[Int], assignments: List[Assignment])
+case class Assignment(s: Int, shifts: List[Option[Int]])
+case class Service(id: Int, name: String, slots: Int)
+
+case class PlanShell(id: Int, name: String)
+
+case class PlanUpdateRequest(id: Int, parts: List[PartsRequest])
+case class PartsRequest(id: Int, date: LocalDate, unavailable: List[Int], assignments: List[Assignment])
 
 @ImplementedBy(classOf[DefaultPlanRepository])
 trait PlanRepository {
-  def save(plan: Plan)
-  def list: List[Plan]
-  def find(id: Long): Plan
+  def save(plan: PlanUpdateRequest)
+  def list: List[PlanShell]
+  def find(id: Long): Option[Plan]
   def remove(id: Long)
   def create(from: LocalDate, to: LocalDate): Long
 }
@@ -32,63 +39,60 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
   val dateFormat = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
   def find(id: Long) = db.withConnection { implicit c =>
-    val plan = SQL"select id, name from plan where id = $id".as(int("id") ~ str("name") map flatten single)
-    val schedulesResult = SQL"select id, day from schedule where plan_id = $id order by day"
-      .as(int("id") ~ get[Date]("day") map flatten *)
-    val schedules = schedulesResult map { case (scheduleId, when) =>
-      val unavailable = SQL"""
-        select v.name from unavailable u
-        join volunteer v on v.id = u.volunteer_id
-        where schedule_id = $scheduleId and v.active
-      """.as(str(1) *)
-      val assigned = SQL"""
-        select s.name service, v.name volunteer, ss.shift from schedule_services ss
-        join service s on s.id = ss.service_id
-        join volunteer v on v.id = ss.volunteer_id
-        where schedule_id = $scheduleId and v.active
-        order by ss.shift
-      """.as(str("service") ~ str("volunteer") ~ int("shift") map flatten *)
-      val assignments = assigned.groupBy(_._1).map {
-        case (service, nameWithIndex) => {
-          val size = nameWithIndex.map(_._3).max + 1
-          val assignees = ListBuffer.fill(size)(None: Option[String])
-          nameWithIndex.foreach({ case (_, n, i) =>
-            assignees(i) = Some(n)
-          })
-          service -> assignees.toList
+    for {
+      (planId, planName) <- SQL"select id, name from plan where id = $id".as(int("id") ~ str("name") map flatten singleOpt)
+    } yield {
+      val services = SQL"select id, name, slots from service".as(int("id") ~ str("name") ~ int("slots") map flatten *) map (Service.apply _).tupled
+      val schedules = for {
+        (scheduleId, day) <- SQL"select id, day from schedule where plan_id = $id order by day"
+          .as(int("id") ~ get[Date]("day") map flatten *)
+      } yield {
+        val unavailable = SQL"""
+          select volunteer_id id from unavailable u
+          join volunteer v on v.id = u.volunteer_id
+          where schedule_id = $scheduleId and v.active
+        """.as(int(1) *)
+        val assigned = SQL"""
+          select service_id service, v.id volunteer, ss.shift from schedule_services ss
+          join volunteer v on v.id = ss.volunteer_id
+          where schedule_id = $scheduleId and v.active
+          order by ss.shift
+        """.as(int("service") ~ int("volunteer") ~ int("shift") map flatten *)
+        val assignments = assigned.groupBy(_._1).map {
+          case (service, idAndIndex) => {
+            val size = idAndIndex.map(_._3).max + 1
+            val assignees = ListBuffer.fill(size)(None: Option[Int])
+            idAndIndex.foreach({ case (_, id, i) =>
+              assignees(i) = Some(id)
+            })
+            Assignment(service, assignees.toList)
+          }
         }
+        Schedule(scheduleId, day, unavailable, assignments.toList)
       }
-      Schedule(scheduleId, when, unavailable, assignments)
-    }
-    Plan(plan._1, plan._2, schedules)
-  }
-
-  def list: List[Plan] = db.withConnection { implicit c =>
-    SQL"select id, name from plan order by id desc".as(int("id") ~ str("name") map flatten *) map { n =>
-      Plan(n._1, n._2, List())
+      Plan(planId, planName, schedules, services)
     }
   }
 
-  def save(plan: Plan) = db.withConnection { implicit c =>
-    val volunteerIds = volunteersByName
-    val serviceIds = servicesByName
+  def list = db.withConnection { implicit c =>
+    for {
+      (id, name) <- SQL"select id, name from plan order by id desc".as(int("id") ~ str("name") map flatten *)
+    } yield PlanShell(id, name)
+  }
+
+  def save(plan: PlanUpdateRequest) = db.withConnection { implicit c =>
     plan.parts.foreach { part =>
       SQL("update schedule set day = {date} where id = {id}")
         .on('date -> toDate(part.date), 'id -> part.id)
         .executeUpdate()
       val deleted = deleteScheduleRefs(part.id)
       Logger.debug(s"deleted (unavailable, assignments): $deleted")
-      part.unavailable.foreach { who =>
-        val whoId = volunteerIds(who)
+      part.unavailable.foreach { whoId =>
         SQL"insert into unavailable values (${part.id}, $whoId)".executeInsert()
       }
-      part.assignments.foreach { assignment =>
-        val serviceId = serviceIds(assignment._1)
-        Logger.debug(s"assignment $assignment")
-        assignment._2.zipWithIndex foreach {
-          case (Some(name), shift) =>
-            val volunteerId = volunteerIds(name)
-            Logger.debug(s"assign $name in shift $shift")
+      part.assignments.foreach { case Assignment(serviceId, shifts) =>
+        shifts.zipWithIndex foreach {
+          case (Some(volunteerId), shift) =>
             SQL"insert into schedule_services values ($volunteerId, $serviceId, ${part.id}, $shift)"
               .executeInsert()
           case _ =>

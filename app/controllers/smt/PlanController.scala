@@ -1,5 +1,7 @@
 package controllers.smt
 
+import app.Application._
+import cats.implicits._
 import controllers.Security
 import java.time.LocalDate
 import javax.inject._
@@ -9,9 +11,10 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import models.smt._
 
-class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanRepository) extends Controller with Security {
+class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanRepository, val controllerComponents: ControllerComponents) extends Security {
 
   case class Range(from: LocalDate, to: LocalDate)
+
   implicit val ldRead = new Reads[LocalDate] {
     def reads(json: JsValue) = JsSuccess(LocalDate.parse(json.as[String]))
   }
@@ -21,71 +24,55 @@ class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanReposit
       case _ => JsSuccess(None)
     }
   }
-  implicit val SchedRead = Json.format[Schedule]
-  implicit val PlanRead = Json.format[Plan]
-  implicit val RangeRead = Json.format[Range]
+  implicit val optIntRead = new Reads[Option[Int]] {
+    def reads(json: JsValue) = json match {
+      case JsNumber(n) => {
+        JsSuccess(Some(n.intValue))
+      }
+      case _ => JsSuccess(None)
+    }
+  }
+  implicit val serviceFmt = Json.writes[Service]
+  implicit val assignemntRequestRead = Json.format[Assignment]
+  implicit val schedRead = Json.writes[Schedule]
+  implicit val planRead = Json.writes[Plan]
+  implicit val rangeRead = Json.format[Range]
+  implicit val partsRequestRead = Json.reads[PartsRequest]
+  implicit val planUpdateRead = Json.reads[PlanUpdateRequest]
+  implicit val planShellWrite = Json.writes[PlanShell]
 
-  def list = Authenticated {
+  def list = isAuthenticated { _ =>
     Ok(Json.toJson(plans.list))
   }
 
-  def show(id: Long) = Authenticated {
-    val json = Json.toJson(plans.find(id))
-    Ok(json)
-  }
-
-  def create = Authenticated(BodyParsers.parse.json) { implicit request =>
-    val result = request.body.validate[Range]
-    result.fold(
-      errors => {
-        val readableErrors = JsError.toJson(errors)
-        Logger.error(s"couldnt create plan: $errors")
-        BadRequest(readableErrors)
-      },
-      range => {
-        Logger.debug(s"from $range")
-        val id = plans.create(range.from, range.to)
-        Ok(routes.PlanController.show(id).absoluteURL)
-      }
-    )
-  }
-
-  def save(id: Long) = Authenticated(BodyParsers.parse.json) { request =>
-    val plan = parseBody(request.body)
-    plans.save(plan)
-    Ok("saved")
-  }
-
-  def parseBody(body: JsValue): Plan = {
-    val id = body(0).as[Int]
-    val name = body(1).as[String]
-    val parts = body(2).as[JsArray]
-    val names = parts(0).as[Array[String]]
-    val services = Array("sicherheit", "mikro", "tonanlage")
-    def lookupName(id: JsValue): Option[String] = id match {
-      case JsNumber(i) if i != -1 => Some(names(i.intValue))
-      case _ => None
+  def show(id: Long) = isAuthenticated { _ =>
+    plans.find(id) match {
+      case Some(plan) => Right(Ok(Json.toJson(plan)))
+      case _ => Left(NoPlan)
     }
-    val schedules = parts(1).as[JsArray].value.map({
-        case JsArray(Seq(JsNumber(id), date, JsArray(assignments), JsArray(unavailable))) => {
-          Logger.debug(s"incoming assignments $assignments")
-          Schedule(id.intValue(),
-            date.as[LocalDate],
-            unavailable.map(lookupName(_)).toList.flatten,
-            assignments.zipWithIndex.map({
-              case (serviceAssignment: JsArray, serviceIndex) => {
-                Logger.debug(s"$serviceAssignment, $serviceIndex")
-                val s: String = services(serviceIndex)
-                val assgs = serviceAssignment.value.map(lookupName(_)).toList
-                s -> assgs
-              }
-            }).toMap)
-        }
-      }).toList
-    Plan(id, name, schedules)
   }
 
-  def remove(id: Long) = Authenticated {
+  def create = isAuthenticated(parse.json) { implicit request =>
+    for {
+      range <- parseBody[Range]
+    } yield {
+      Logger.debug(s"from $range")
+      val id = plans.create(range.from, range.to)
+      Ok(routes.PlanController.show(id).absoluteURL)
+    }
+  }
+
+  def save(id: Long) = isAuthenticated(parse.json) { implicit request =>
+    for {
+      plan <- parseBody[PlanUpdateRequest]
+    } yield {
+      Logger.debug(s"saving $plan")
+      plans.save(plan)
+      Ok("saved")
+    }
+  }
+
+  def remove(id: Long) = isAuthenticated { _ =>
     plans.remove(id)
     Ok("deleted")
   }

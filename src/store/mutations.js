@@ -1,12 +1,6 @@
 import moment from 'moment'
 import find from 'lodash/find'
 
-const SLOTS = {
-  sicherheit: 2,
-  mikro: 2,
-  tonanlage: 1
-}
-
 export default {
   select (state, current) {
     state.current = current
@@ -14,31 +8,33 @@ export default {
   assign (state, payload) {
     const assignedPrevious = state.current[payload.service][payload.index]
     if (assignedPrevious) {
-      find(state.assignees, a => a.name === assignedPrevious).timesAssigned -= 1
+      assignedPrevious.timesAssigned -= 1
     }
-    if (payload.name) {
-      find(state.assignees, a => a.name === payload.name).timesAssigned += 1
+    const assigned = payload.name ? find(state.assignees, a => a.name === payload.name) : undefined
+    if (assigned) {
+      assigned.timesAssigned += 1
     }
-    state.current[payload.service][payload.index] = payload.name
-    state.current[payload.service].splice(SLOTS[payload.service])
+    state.current[payload.service][payload.index] = assigned
+    const slots = find(state.services, s => s.name === payload.service).slots
+    state.current[payload.service].splice(slots)
   },
-  toggleUnavailable (state, name) {
+  toggleUnavailable (state, id) {
     const list = state.current.unavailable
-    const index = list.indexOf(name)
+    const index = list.indexOf(id)
     if (index !== -1) {
       list.splice(index, 1)
     } else {
-      list.push(name)
+      list.push(id)
     }
   },
   load (state, payload) {
     state.assignments = payload.parts
     state.title = payload.name
-    const services = Object.keys(SLOTS)
+    state.services = payload.services
     const timesAssigned = state.assignments.reduce((map, assignment) => {
-      services.forEach(service => {
-        assignment[service].forEach(name => {
-          name && (name in map ? map[name]++ : map[name] = 1)
+      state.services.forEach(service => {
+        assignment[service.name].forEach(a => {
+          a && (a.name in map ? map[a.name]++ : map[a.name] = 1)
         })
       })
       return map
