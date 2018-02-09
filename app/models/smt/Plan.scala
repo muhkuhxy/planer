@@ -38,39 +38,50 @@ trait PlanRepository {
 class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with Helper {
   val dateFormat = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
+  def plans(implicit c: Connection) = SQL"select id, name from plan order by id desc".as(int("id") ~ str("name") map flatten *)
+
+  def planById(id: Long)(implicit c: Connection) =
+    SQL"select id, name from plan where id = $id".as(int("id") ~ str("name") map flatten singleOpt)
+
+  def schedules(id: Long)(implicit c: Connection): Iterable[RawSchedule] =
+    SQL"""
+      select s.id, day, volunteer_id, service_id, shift, slots from schedule s
+      join schedule_services ss on s.id = ss.schedule_id
+      join service on service.id = ss.service_id
+      join volunteer v on v.id = volunteer_id
+      where plan_id = $id and v.active
+      order by day, service_id, shift
+    """.as(Macro.indexedParser[RawSchedule].*)
+
+  def groupWith[A, B](xs: Iterable[A])(f: A => B): Iterable[Iterable[A]] =
+    xs.groupBy(f).map(_._2).toIterable
+
+  case class RawSchedule(id: Int, day: Date, volunteerId: Int, serviceId: Int, shift: Int, slots: Int)
+
+  def scheduleGroups(id: Long)(implicit c: Connection): Iterable[Iterable[RawSchedule]] =
+    groupWith(schedules(id))(_.id)
+
+  def unavailableOn(scheduleId: Int)(implicit c: Connection) =
+    SQL"""
+      select volunteer_id id from unavailable u
+      join volunteer v on v.id = u.volunteer_id
+      where schedule_id = $scheduleId and v.active
+    """.as(int(1) *)
+
   def find(id: Long) = db.withConnection { implicit c =>
-    for {
-      (planId, planName) <- SQL"select id, name from plan where id = $id".as(int("id") ~ str("name") map flatten singleOpt)
-    } yield {
-      val services = SQL"select id, name, slots from service".as(int("id") ~ str("name") ~ int("slots") map flatten *) map (Service.apply _).tupled
-      val schedules = for {
-        (scheduleId, day) <- SQL"select id, day from schedule where plan_id = $id order by day"
-          .as(int("id") ~ get[Date]("day") map flatten *)
-      } yield {
-        val unavailable = SQL"""
-          select volunteer_id id from unavailable u
-          join volunteer v on v.id = u.volunteer_id
-          where schedule_id = $scheduleId and v.active
-        """.as(int(1) *)
-        val assigned = SQL"""
-          select service_id service, v.id volunteer, ss.shift from schedule_services ss
-          join volunteer v on v.id = ss.volunteer_id
-          where schedule_id = $scheduleId and v.active
-          order by ss.shift
-        """.as(int("service") ~ int("volunteer") ~ int("shift") map flatten *)
-        val assignments = assigned.groupBy(_._1).map {
-          case (service, idAndIndex) => {
-            val size = idAndIndex.map(_._3).max + 1
-            val assignees = ListBuffer.fill(size)(None: Option[Int])
-            idAndIndex.foreach({ case (_, id, i) =>
-              assignees(i) = Some(id)
-            })
-            Assignment(service, assignees.toList)
+    planById(id) map { case (planId, planName) =>
+      Plan(planId, planName, scheduleGroups(planId) map { case schedule =>
+        val (scheduleId, day) = schedule.headOption.map(x => (x.id, x.day)).get
+        val assignments = groupWith(schedule)(_.serviceId) map { case serviceGroup =>
+          val (service, slots) = serviceGroup.headOption.map(x => (x.serviceId, x.slots)).get
+          val assignees = ListBuffer.fill(slots)(None: Option[Int])
+          serviceGroup.map { case RawSchedule(_, _, volunteer, _, shift, _) =>
+            assignees(shift) = Some(volunteer)
           }
+          Assignment(service, assignees.toList)
         }
-        Schedule(scheduleId, day, unavailable, assignments.toList)
-      }
-      Plan(planId, planName, schedules, services)
+        Schedule(scheduleId, day, unavailableOn(scheduleId), assignments.toList)
+      } toList, services.toList)
     }
   }
 

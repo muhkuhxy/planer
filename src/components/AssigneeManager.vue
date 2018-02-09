@@ -3,48 +3,57 @@ import Vue from 'vue'
 import service from '../api/plan.service'
 import StatusIndicator from './StatusIndicator'
 import Spinner from 'vue-simple-spinner'
-
-const SERVICES = ['sicherheit', 'mikro', 'tonanlage']
+import {mapState} from 'vuex'
+import cloneDeep from 'lodash/cloneDeep'
 
 export default {
   data () {
     return {
-      assignees: [],
       newName: '',
       saveState: '',
-      loading: false
+      loading: false,
+      assigneeVm: []
     }
   },
   created () {
     this.load()
   },
+  computed: {
+    ...mapState(['assignees', 'services'])
+  },
   methods: {
     load () {
       this.loading = true
-      service.getAssignees().then(as => {
-        this.assignees = as.map(a => {
-          const services = SERVICES.map(s => a.services.includes(s))
-          return {
-            ...a,
-            services,
-            editing: false
-          }
+      this.$store.dispatch('loadAssignees')
+        .then(_ => {
+          this.assigneeVm = cloneDeep(this.assignees)
+          this.assigneeVm.forEach(_ => Vue.set(_, 'editing', false))
         })
-      }).finally(_ => { this.loading = false })
+        .finally(_ => {
+          this.loading = false
+        })
     },
-    toggleService (assignee, index) {
-      Vue.set(assignee.services, index, !assignee.services[index])
+    hasService (assignee, serviceId) {
+      return assignee.services.includes(serviceId)
+    },
+    toggleService (assignee, serviceId) {
+      const index = assignee.services.indexOf(serviceId)
+      if (index < 0) {
+        assignee.services.push(serviceId)
+      } else {
+        assignee.services.splice(index, 1)
+      }
     },
     remove (assignee) {
-      const index = this.assignees.indexOf(assignee)
-      this.assignees.splice(index, 1)
+      const index = this.assigneeVm.indexOf(assignee)
+      this.assigneeVm.splice(index, 1)
     },
     add () {
-      this.assignees.push({
+      this.assigneeVm.push({
         name: this.newName,
         email: '',
         id: -1,
-        services: [false, false, false],
+        services: [],
         editing: false
       })
       this.newName = ''
@@ -52,23 +61,12 @@ export default {
     async save () {
       this.saveState = 'working'
       try {
-        const result = await service.saveAssignees(this.serialize())
+        const result = await service.saveAssignees(this.assigneeVm)
         this.saveState = result.status === 200 ? 'success' : 'error'
       } catch (e) {
         this.saveState = 'error'
         console.log(e)
       }
-    },
-    serialize () {
-      return [
-        SERVICES,
-        this.assignees.map(a => [
-          a.id,
-          a.name,
-          a.services.map((v, i) => [v, i]).filter(_ => _[0]).map(_ => _[1]),
-          a.email || ''
-        ])
-      ]
     }
   },
   components: {
@@ -103,13 +101,13 @@ export default {
             </tr>
           </thead>
           <tbody>
-            <tr class="helper" v-for="assignee in assignees">
+            <tr class="helper" v-for="assignee in assigneeVm">
               <td class="name" v-if="assignee.editing"><input type="text" v-model="assignee.name"></td>
               <td class="name" v-else>{{ assignee.name }}</td>
               <td class="email" v-if="assignee.editing"><input type="text" v-model="assignee.email"></td>
               <td class="email" v-else>{{ assignee.email }}</td>
-              <td v-for="(service, index) in assignee.services">
-                <input type="checkbox" :checked="service" @change="toggleService(assignee, index)">
+              <td v-for="service in services">
+                <input type="checkbox" :checked="hasService(assignee, service.id)" @change="toggleService(assignee, service.id)">
               </td>
               <td>
                 <button class="btn btn-xs btn-default" type="button" @click="assignee.editing = !assignee.editing">

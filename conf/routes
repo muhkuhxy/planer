@@ -15,5 +15,7 @@ DELETE /api/plan/:id  controllers.smt.PlanController.remove(id: Long)
 GET    /api/assignees controllers.smt.AssigneeController.list
 PUT    /api/assignees controllers.smt.AssigneeController.save
 
+GET    /api/service   controllers.smt.AssigneeController.listServices
+
 GET    /              controllers.Assets.at(path="/public", file="index.html")
 GET    /*file         controllers.Assets.at(path="/public", file)

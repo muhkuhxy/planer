@@ -28,8 +28,11 @@ export default {
   save (plan) {
     return req.put('/api/plan/' + plan.id, plan)
   },
-  getAssignees: function () {
+  getAssignees () {
     return req.get('/api/assignees').then(r => JSON.parse(r.responseText))
+  },
+  getServices () {
+    return req.get('/api/service').then(r => JSON.parse(r.responseText))
   },
   saveAssignees (assignees) {
     return req.put('/api/assignees', assignees)

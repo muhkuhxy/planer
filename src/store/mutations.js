@@ -30,7 +30,6 @@ export default {
   load (state, payload) {
     state.assignments = payload.parts
     state.title = payload.name
-    state.services = payload.services
     const timesAssigned = state.assignments.reduce((map, assignment) => {
       state.services.forEach(service => {
         assignment[service.name].forEach(a => {
@@ -45,6 +44,9 @@ export default {
   },
   loadAssignees (state, payload) {
     state.assignees = payload
+  },
+  loadServices (state, payload) {
+    state.services = payload
   },
   toggleServiceweek (state, dayPlan) {
     const date = moment(dayPlan.date)

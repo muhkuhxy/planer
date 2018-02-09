@@ -6,8 +6,8 @@ import get from 'lodash/get'
 export default {
   props: ['assignment'],
   methods: {
-    name (service, slot) {
-      return get(this.assignment, [service, slot, 'name'])
+    name (serviceName, slot) {
+      return get(this.assignment, [serviceName, slot, 'name'])
     },
     select () {
       this.$store.commit('select', this.assignment)
@@ -41,7 +41,7 @@ export default {
         platzhalter: this.selected
       }
     },
-    ...mapState(['current'])
+    ...mapState(['current', 'services'])
   }
 }
 </script>
