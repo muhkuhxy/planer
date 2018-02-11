@@ -2,6 +2,9 @@ package models.smt
 
 import anorm._
 import anorm.SqlParser._
+import anorm.Macro.ColumnNaming
+import cats.data.NonEmptyList
+import cats.implicits._
 import com.google.inject.ImplementedBy
 import java.sql.Connection
 import java.time._
@@ -36,59 +39,19 @@ trait PlanRepository {
 }
 
 class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with Helper {
-  val dateFormat = DateTimeFormatter.ofPattern("dd.MM.yyyy")
-
-  def plans(implicit c: Connection) = SQL"select id, name from plan order by id desc".as(int("id") ~ str("name") map flatten *)
-
-  def planById(id: Long)(implicit c: Connection) =
-    SQL"select id, name from plan where id = $id".as(int("id") ~ str("name") map flatten singleOpt)
-
-  def schedules(id: Long)(implicit c: Connection): Iterable[RawSchedule] =
-    SQL"""
-      select s.id, day, volunteer_id, service_id, shift, slots from schedule s
-      join schedule_services ss on s.id = ss.schedule_id
-      join service on service.id = ss.service_id
-      join volunteer v on v.id = volunteer_id
-      where plan_id = $id and v.active
-      order by day, service_id, shift
-    """.as(Macro.indexedParser[RawSchedule].*)
-
-  def groupWith[A, B](xs: Iterable[A])(f: A => B): Iterable[Iterable[A]] =
-    xs.groupBy(f).map(_._2).toIterable
-
-  case class RawSchedule(id: Int, day: Date, volunteerId: Int, serviceId: Int, shift: Int, slots: Int)
-
-  def scheduleGroups(id: Long)(implicit c: Connection): Iterable[Iterable[RawSchedule]] =
-    groupWith(schedules(id))(_.id)
-
-  def unavailableOn(scheduleId: Int)(implicit c: Connection) =
-    SQL"""
-      select volunteer_id id from unavailable u
-      join volunteer v on v.id = u.volunteer_id
-      where schedule_id = $scheduleId and v.active
-    """.as(int(1) *)
-
-  def find(id: Long) = db.withConnection { implicit c =>
-    planById(id) map { case (planId, planName) =>
-      Plan(planId, planName, scheduleGroups(planId) map { case schedule =>
-        val (scheduleId, day) = schedule.headOption.map(x => (x.id, x.day)).get
-        val assignments = groupWith(schedule)(_.serviceId) map { case serviceGroup =>
-          val (service, slots) = serviceGroup.headOption.map(x => (x.serviceId, x.slots)).get
-          val assignees = ListBuffer.fill(slots)(None: Option[Int])
-          serviceGroup.map { case RawSchedule(_, _, volunteer, _, shift, _) =>
-            assignees(shift) = Some(volunteer)
-          }
-          Assignment(service, assignees.toList)
-        }
-        Schedule(scheduleId, day, unavailableOn(scheduleId), assignments.toList)
-      } toList, services.toList)
-    }
-  }
 
   def list = db.withConnection { implicit c =>
     for {
       (id, name) <- SQL"select id, name from plan order by id desc".as(int("id") ~ str("name") map flatten *)
     } yield PlanShell(id, name)
+  }
+
+  def find(id: Long) = db.withConnection { implicit c =>
+    for {
+      (planId, planName) <- planById(id)
+    } yield {
+      Plan(planId, planName, schedules(planId).map(makeSchedule).toList, services.toList)
+    }
   }
 
   def save(plan: PlanUpdateRequest) = db.withConnection { implicit c =>
@@ -115,8 +78,10 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
   def remove(id: Long) = db.withConnection { implicit c =>
     val scheduleIds = SQL"select id from schedule where plan_id = $id".as(multiIds)
     scheduleIds.foreach(deleteScheduleRefs(_))
-    val count = SQL"delete from schedule where id in (${scheduleIds})".executeUpdate()
-    Logger.info(s"$count schedules deleted")
+    if (scheduleIds.nonEmpty) {
+      val count = SQL"delete from schedule where id in (${scheduleIds})".executeUpdate()
+      Logger.info(s"$count schedules deleted")
+    }
     SQL"delete from plan where id = $id".executeUpdate
   }
 
@@ -132,6 +97,68 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
     }
     planId
   }
+
+  def makeSchedule(schedule: MeetingDay)(implicit c: Connection): Schedule = {
+    val assignments = groupWith(schedule.assignments)(_.serviceId).map(makeAssignment)
+    Schedule(schedule.id, schedule.day, unavailableOn(schedule.id), assignments.toList)
+  }
+
+  def makeAssignment(serviceGroup: NonEmptyList[AssignmentExtra]): Assignment = {
+    val (service, slots) = (serviceGroup.head.serviceId, serviceGroup.head.slots)
+    val shifts = ListBuffer.fill(slots)(None: Option[Int])
+    serviceGroup.map { ae =>
+      shifts(ae.shift) = Some(ae.volunteerId)
+    }
+    Assignment(service, shifts.toList)
+  }
+
+  val dateFormat = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+
+  def plans(implicit c: Connection) =
+    SQL"select id, name from plan order by id desc"
+      .as(int("id") ~ str("name") map flatten *)
+
+  def planById(id: Long)(implicit c: Connection) =
+    SQL"select id, name from plan where id = $id"
+      .as(int("id") ~ str("name") map flatten singleOpt)
+
+  def schedules(id: Long)(implicit c: Connection): Iterable[MeetingDay] =
+    SQL"""
+      select s.id, day, volunteer_id, service_id, shift, slots from schedule s
+      left join schedule_services ss on s.id = ss.schedule_id
+      left join service on service.id = ss.service_id
+      left join volunteer v on v.id = volunteer_id
+      where plan_id = $id
+      order by day, service_id, shift
+    """.as(parser *)
+    .groupBy(_._1)
+    .mapValues(_.map(_._2).flatten)
+    .map { case (md, as) => md.copy(assignments = as) }
+
+  case class MeetingDay(id: Int, day: LocalDate, assignments: List[AssignmentExtra])
+  case class AssignmentExtra(volunteerId: Int, serviceId: Int, shift: Int, slots: Int)
+
+  val simpleMeetingDayParser: RowParser[MeetingDay] = {
+    int("id") ~ get[Date]("day") map {
+      case id ~ day => MeetingDay(id, day, Nil)
+    }
+  }
+
+  val assignmentExtraParser = Macro.namedParser[AssignmentExtra](ColumnNaming.SnakeCase)
+
+  val parser: RowParser[(MeetingDay, Option[AssignmentExtra])] = {
+    simpleMeetingDayParser ~ assignmentExtraParser.? map flatten
+  }
+
+  def groupWith[A, B](xs: Iterable[A])(f: A => B): Iterable[NonEmptyList[A]] =
+    xs.groupBy(f).map(ys => NonEmptyList.fromListUnsafe(ys._2.toList))
+
+  def unavailableOn(scheduleId: Int)(implicit c: Connection) =
+    SQL"""
+      select volunteer_id id from unavailable u
+      join volunteer v on v.id = u.volunteer_id
+      where schedule_id = $scheduleId
+    """.as(int(1) *)
 
   def daysBetween(from: LocalDate, to: LocalDate, weekDays: Seq[DayOfWeek]): Stream[LocalDate] = {
     lazy val loopingWeekdays: Stream[DayOfWeek] = weekDays.toStream #::: loopingWeekdays

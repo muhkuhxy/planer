@@ -35,14 +35,13 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
       select v.id, v.name as volunteer, s.id as service, v.email from volunteer v
       left join volunteer_service vs on v.id = vs.volunteer_id
       left join service s on s.id = vs.service_id
-      where v.active
     """.as(int("id") ~
       str("volunteer") ~
       get[Option[Int]]("service") ~
       get[Option[String]]("email") map (flatten) *)
     val assignees = for {
-      ((id, name), bla) <- result.groupBy(x => (x._1, x._2))
-    } yield Assignee(id, name, bla.map(_._3).flatten.toSet, bla.head._4)
+      ((id, name), grouped) <- result.groupBy(x => (x._1, x._2))
+    } yield Assignee(id, name, grouped.flatMap(_._3).toSet, grouped.head._4)
     assignees.toList.sortBy(_.name)
   }
 
@@ -73,12 +72,13 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
     case class Remove(as: Assignee) extends AssigneeOp {
       def execute {
         Logger.info(s"removing $as")
-        val geloeschtId = SQL"select id from volunteer where name = 'geloescht'".as(int("id").single)
         val asId = as.id
-        SQL"update volunteer_service set volunteer_id = $geloeschtId where volunteer_id = $asId".executeUpdate()
-        SQL"update schedule_services set volunteer_id = $geloeschtId where volunteer_id = $asId".executeUpdate()
-        SQL"update unavailable set volunteer_id = $geloeschtId where volunteer_id = $asId".executeUpdate()
-        val result = SQL"delete from volunteer where id = $asId".executeUpdate()
+        val result = SQL"""
+          delete from volunteer_service where volunteer_id = $asId;
+          delete from schedule_services where volunteer_id = $asId;
+          delete from unavailable where volunteer_id = $asId;
+          delete from volunteer where id = $asId;
+        """.executeUpdate()
         Logger.debug(s"$result geloescht")
       }
     }
