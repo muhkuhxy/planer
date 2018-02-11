@@ -3,9 +3,13 @@ package models.smt
 import anorm._
 import anorm.SqlParser._
 import java.sql.Connection
+import java.time.LocalDate
 import scala.language.postfixOps
 
 trait Helper {
+
+  implicit def localDateOrdering: Ordering[LocalDate] = Ordering.fromLessThan(_ isBefore _)
+  def localDateDescOrdering: Ordering[LocalDate] = localDateOrdering.reverse
 
   def services(implicit c: Connection): Iterable[Service] =
     SQL"select id, name, slots from service order by id".as(Macro.namedParser[Service].*)

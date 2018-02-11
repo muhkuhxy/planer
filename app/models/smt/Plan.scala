@@ -122,18 +122,19 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
     SQL"select id, name from plan where id = $id"
       .as(int("id") ~ str("name") map flatten singleOpt)
 
-  def schedules(id: Long)(implicit c: Connection): Iterable[MeetingDay] =
+  def schedules(id: Long)(implicit c: Connection): List[MeetingDay] =
     SQL"""
       select s.id, day, volunteer_id, service_id, shift, slots from schedule s
       left join schedule_services ss on s.id = ss.schedule_id
       left join service on service.id = ss.service_id
       left join volunteer v on v.id = volunteer_id
       where plan_id = $id
-      order by day, service_id, shift
     """.as(parser *)
     .groupBy(_._1)
     .mapValues(_.map(_._2).flatten)
     .map { case (md, as) => md.copy(assignments = as) }
+    .toList
+    .sortBy(_.day)
 
   case class MeetingDay(id: Int, day: LocalDate, assignments: List[AssignmentExtra])
   case class AssignmentExtra(volunteerId: Int, serviceId: Int, shift: Int, slots: Int)
@@ -176,7 +177,7 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
   }
 
   def toDate(local: LocalDate): java.util.Date =
-    java.util.Date.from(local.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant)
+    Date.from(local.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant)
 
   implicit def toLocalDate(date: Date): LocalDate =
     LocalDateTime.ofInstant(Instant.ofEpochMilli(date.getTime()), ZoneId.systemDefault()).toLocalDate()

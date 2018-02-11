@@ -11,7 +11,7 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import models.smt._
 
-class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanRepository, val controllerComponents: ControllerComponents) extends Security {
+object PlanController {
 
   case class Range(from: LocalDate, to: LocalDate)
 
@@ -40,6 +40,10 @@ class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanReposit
   implicit val partsRequestRead = Json.reads[PartsRequest]
   implicit val planUpdateRead = Json.reads[PlanUpdateRequest]
   implicit val planShellWrite = Json.writes[PlanShell]
+}
+
+class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanRepository, val controllerComponents: ControllerComponents) extends Security {
+  import PlanController._
 
   def list = isAuthenticated { _ =>
     Ok(Json.toJson(plans.list))

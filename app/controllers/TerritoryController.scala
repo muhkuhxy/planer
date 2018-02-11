@@ -11,9 +11,6 @@ import models.territory._
 
 class TerritoryController @Inject()(territories: TerritoryRepository, friends: FriendRepository, val controllerComponents: ControllerComponents) extends Security {
 
-  implicit def localDateOrdering: Ordering[LocalDate] = Ordering.fromLessThan(_ isBefore _)
-  def localDateDescOrdering: Ordering[LocalDate] = localDateOrdering.reverse
-
   def overview = isAuthenticated { _ =>
     val (available, issued) = territories.summary
     Ok(views.html.territory.summary(available, issued))
