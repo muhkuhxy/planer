@@ -81,6 +81,7 @@
     "url-loader": "^0.5.8",
     "vue": "^2.5.13",
     "vue-datepicker-local": "^1.0.10",
+    "vue-js-toggle-button": "^1.2.2",
     "vue-loader": "^13.7.1",
     "vue-router": "^3.0.1",
     "vue-simple-spinner": "^1.2.8",
