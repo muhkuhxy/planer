@@ -15,7 +15,7 @@ import play.api.Logger
 import scala.language.postfixOps
 import scala.language.implicitConversions
 
-case class Assignee(id: Int = -1, name: String, services: Set[Int], email: Option[String] = None)
+case class Assignee(id: Int = -1, name: String, services: List[Int], email: Option[String] = None)
 
 @ImplementedBy(classOf[DefaultAssigneeRepository])
 trait AssigneeRepository {
@@ -41,7 +41,7 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
       get[Option[String]]("email") map (flatten) *)
     val assignees = for {
       ((id, name), grouped) <- result.groupBy(x => (x._1, x._2))
-    } yield Assignee(id, name, grouped.flatMap(_._3).toSet, grouped.head._4)
+    } yield Assignee(id, name, grouped.flatMap(_._3).toList.sorted, grouped.head._4)
     assignees.toList.sortBy(_.name)
   }
 
@@ -89,7 +89,7 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
       now.foreach { case as @ Assignee(id, name, services, email) =>
         if(id > 0) {
           val existing = oldMap(id)
-          if(existing.services != services || existing.email != email || existing.name != name) {
+          if(existing.services.toSet != services.toSet || existing.email != email || existing.name != name) {
             ops += Update(as)
           }
         } else {
