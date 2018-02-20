@@ -8,8 +8,7 @@ import cats.data._
 import cats.implicits._
 import javax.inject._
 import org.mindrot.jbcrypt.BCrypt
-import play.api.mvc
-import play.api.mvc.{Result => PlayResult, _}
+import play.api.mvc._
 import play.api.Logger
 import play.api.i18n._
 import play.api.mvc.Results._
@@ -23,12 +22,12 @@ import play.api.libs.json._
 trait Security extends BaseController {
   def getUserFromRequest(req: RequestHeader): Option[String] = req.session.get("username")
   def onUnauthorized(req: RequestHeader) = Unauthorized
-  def isAuthenticated(f: => Request[AnyContent] => mvc.Result) = {
+  def isAuthenticated(f: => Request[AnyContent] => Result) = {
     Authenticated(getUserFromRequest, onUnauthorized) { user =>
       Action(request => f(request))
     }
   }
-  def isAuthenticated[T](b: BodyParser[T])(f: => Request[T] => mvc.Result) = {
+  def isAuthenticated[T](b: BodyParser[T])(f: => Request[T] => Result) = {
     Authenticated(getUserFromRequest, onUnauthorized) { user =>
       Action(b)(request => f(request))
     }
@@ -55,7 +54,7 @@ class AuthenticationController @Inject()(db: Database, val controllerComponents:
 
     def startSession(user: String) = Ok(user).withSession(request.session + ("username" -> user))
 
-    def verifyCredentials(isValid: Boolean, user: String): Either[DomainError, PlayResult] =
+    def verifyCredentials(isValid: Boolean, user: String): Either[DomainError, Result] =
       if (isValid) {
         Right(startSession(user))
       } else {

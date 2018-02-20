@@ -166,12 +166,10 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
     // drop first day of week if from is the same DOW, otherwise we skip e.g. from Friday to Friday
     // from will be included anyway b/c of scanLeft
     val fixedWeekdays = loopingWeekdays.dropWhile(dow => dow == from.getDayOfWeek)
-    val nextWeekday = fixedWeekdays map {
-      TemporalAdjusters.next
-    }
+    val weekdayAdjusters = fixedWeekdays.map(TemporalAdjusters.next)
 
-    nextWeekday.scanLeft(from)((date, adjuster) => {
-      date.`with`(adjuster)
+    weekdayAdjusters.scanLeft(from)((date, nextWeekday) => {
+      date `with` nextWeekday
     }).dropWhile(d => !weekDays.contains(d.getDayOfWeek))
       .takeWhile(d => d.isBefore(to) || d.isEqual(to))
   }
