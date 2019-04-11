@@ -20,7 +20,7 @@ class AssigneeController @Inject()(assignees: AssigneeRepository, val controller
   }
 
   def save = isAuthenticated(parse.json) { implicit request =>
-    for (result <- parseBody[List[Assignee]]) yield {
+    parseBody[List[Assignee]].map { result =>
       assignees.save(result)
       Ok("helpers saved")
     }

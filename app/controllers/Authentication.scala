@@ -16,17 +16,43 @@ import play.api.mvc.Security._
 import play.api.data._
 import play.filters.csrf._
 import play.api.data.Forms._
+import play.api.db.slick._
 import play.api.db.Database
 import play.api.libs.json._
+import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile.api._
+import slick.basic._
+import scala.concurrent._
+
+final case class UserRow(name: String, password: String)
+
+trait AuthenticationAccess {
+
+  lazy val users = TableQuery[UserTable]
+
+  def passwordFor(name: String): DBIO[Option[String]] =
+    users.filter(_.name === name).result.headOption
+
+  class UserTable(tag: Tag) extends Table[String](tag, "appuser") {
+    def name = column[String]("username")
+    def password = column[String]("password")
+
+    def * = password
+  }
+}
 
 trait Security extends BaseController {
-  def getUserFromRequest(req: RequestHeader): Option[String] = req.session.get("username")
+  def getUserFromRequest(req: RequestHeader): Option[String] =
+    req.session.get("username")
+
   def onUnauthorized(req: RequestHeader) = Unauthorized
-  def isAuthenticated(f: => Request[AnyContent] => Result) = {
+
+  def isAuthenticated[A](f: => Request[AnyContent] => Result) = {
     Authenticated(getUserFromRequest, onUnauthorized) { user =>
       Action(request => f(request))
     }
   }
+
   def isAuthenticated[T](b: BodyParser[T])(f: => Request[T] => Result) = {
     Authenticated(getUserFromRequest, onUnauthorized) { user =>
       Action(b)(request => f(request))
@@ -38,28 +64,38 @@ object AuthenticationController {
   case class LoginData(name: String, password: String)
 
   implicit val loginReads = Json.reads[LoginData]
+
 }
 
-class AuthenticationController @Inject()(db: Database, val controllerComponents: ControllerComponents) extends Security with I18nSupport {
+class AuthenticationController @Inject()(
+  cc: ControllerComponents,
+  val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext)
+    extends AbstractController(cc)
+    with AuthenticationAccess
+    with Security
+    with I18nSupport
+    with HasDatabaseConfigProvider[JdbcProfile] {
   import AuthenticationController._
 
-  def checkCredentials(data: LoginData): Either[DomainError, String] =
-    db.withConnection { implicit c =>
-      SQL"select password from appuser where username = ${data.name}"
-        .as(scalar[String].singleOpt)
-        .filter(hashedPw => BCrypt.checkpw(data.password, hashedPw))
-        .toRight(InvalidCredentials)
-    }
+  def checkCredentials(enteredPw: String)(maybePw: Option[String]): Either[DomainError, String] =
+    maybePw.filter(hashedPw => BCrypt.checkpw(enteredPw, hashedPw))
+      .toRight(InvalidCredentials)
 
-  def login = Action(parse.json) { implicit request =>
+  def wrap[A](either: Either[DomainError, A]): EitherT[Future, DomainError, A] =
+    EitherT.fromEither(either)
+
+  def readAndCheckCredentials(data: LoginData): EitherT[Future, DomainError, String] =
+    EitherT(db.run(passwordFor(data.name).map { checkCredentials(data.password) }))
+
+  def login = Action.async(parse.json) { implicit request =>
 
     def startSession(user: String) =
       Ok(user)
         .withSession(request.session + ("username" -> user))
 
     for {
-      data <- parseBody[LoginData]
-      valid <- checkCredentials(data)
+      data <- parseBody[LoginData].toT[Future]
+      valid <- readAndCheckCredentials(data)
     } yield startSession(data.name)
   }
 

@@ -1,5 +1,8 @@
 package app
 
+import cats._
+import cats.data._
+import cats.syntax.functor._
 import cats.implicits._
 import play.api.http.Writeable
 import play.api.libs.json._
@@ -8,6 +11,7 @@ import play.api.mvc.{Result => PlayResult, Request}
 import play.api.mvc.Results._
 import play.api.Logger
 import scala.language.implicitConversions
+import scala.concurrent._
 
 object Application {
   val logger = Logger("application")
@@ -22,8 +26,15 @@ object Application {
   def parseBody[T](implicit request: Request[JsValue], reads: Reads[T]): Either[JsonParseError, T] =
     request.body.validate[T].asEither.leftMap(JsonParseError(request.body, _))
 
+  implicit def toHttpResult[F[_]](e: EitherT[F, DomainError, PlayResult])(implicit f: Functor[F]): F[PlayResult] =
+    f.map(e.value)(_.fold(mapErrors, identity))
+
   implicit def toHttpResult(e: Either[DomainError, PlayResult]): PlayResult =
-    e.fold(mapErrors, identity)
+    toHttpResult[Id](EitherT.fromEither[Id](e))
+
+  implicit class EitherOps[E, A](val either: Either[E, A]) {
+    def toT[F[_]: Applicative]: EitherT[F, E, A] = EitherT.fromEither[F](either)
+  }
 
   def mapErrors(e: DomainError): PlayResult = e match {
     case JsonParseError(json, errors) => {
