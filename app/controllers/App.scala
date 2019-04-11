@@ -10,6 +10,8 @@ import play.api.Logger
 import scala.language.implicitConversions
 
 object Application {
+  val logger = Logger("application")
+
   sealed abstract class DomainError
   case class JsonParseError(json: JsValue, errors: JsErrors) extends DomainError
   case object InvalidCredentials extends DomainError
@@ -25,8 +27,8 @@ object Application {
 
   def mapErrors(e: DomainError): PlayResult = e match {
     case JsonParseError(json, errors) => {
-      Logger.error(s"invalid json in $json")
-      Logger.error(s"errors: $errors")
+      logger.error(s"invalid json in $json")
+      logger.error(s"errors: $errors")
       BadRequest
     }
     case InvalidCredentials => Unauthorized

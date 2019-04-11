@@ -1,5 +1,6 @@
 package models.smt
 
+import app.Application.logger
 import anorm._
 import anorm.SqlParser._
 import anorm.Macro.ColumnNaming
@@ -14,7 +15,6 @@ import javax.inject._
 import java.util.Date
 import play.api.Play.current
 import play.api.db._
-import play.api.Logger
 import scala.language.postfixOps
 import scala.language.implicitConversions
 import scala.collection.mutable.ListBuffer
@@ -60,7 +60,7 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
         .on('date -> toDate(part.date), 'id -> part.id)
         .executeUpdate()
       val deleted = deleteScheduleRefs(part.id)
-      Logger.debug(s"deleted (unavailable, assignments): $deleted")
+      logger.debug(s"deleted (unavailable, assignments): $deleted")
       part.unavailable.foreach { whoId =>
         SQL"insert into unavailable values (${part.id}, $whoId)".executeInsert()
       }
@@ -80,13 +80,13 @@ class DefaultPlanRepository @Inject()(db: Database) extends PlanRepository with 
     scheduleIds.foreach(deleteScheduleRefs(_))
     if (scheduleIds.nonEmpty) {
       val count = SQL"delete from schedule where id in (${scheduleIds})".executeUpdate()
-      Logger.info(s"$count schedules deleted")
+      logger.info(s"$count schedules deleted")
     }
     SQL"delete from plan where id = $id".executeUpdate
   }
 
   def create(from: LocalDate, to: LocalDate) = db.withConnection { implicit c =>
-    Logger.debug(s"formatted to ${to.format(dateFormat)}")
+    logger.debug(s"formatted to ${to.format(dateFormat)}")
     val planId = SQL("insert into plan(name) values ({name})")
       .on('name -> s"${from.format(dateFormat)} bis ${to.format(dateFormat)}")
       .executeInsert().get

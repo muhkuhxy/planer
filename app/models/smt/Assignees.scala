@@ -1,5 +1,6 @@
 package models.smt
 
+import app.Application.logger
 import anorm._
 import anorm.SqlParser._
 import com.google.inject.ImplementedBy
@@ -11,7 +12,6 @@ import javax.inject._
 import java.util.Date
 import play.api.Play.current
 import play.api.db._
-import play.api.Logger
 import scala.language.postfixOps
 import scala.language.implicitConversions
 
@@ -53,7 +53,7 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
       require(as.id > 0)
       val asId = as.id
       def execute {
-        Logger.info(s"updating services $as with id $asId")
+        logger.info(s"updating services $as with id $asId")
         val result = SQL("update volunteer set name = {name}, email = {email} where id = {id}")
           .on("name" -> as.name, "email" -> as.email, "id" -> asId).executeUpdate()
         SQL"delete from volunteer_service where volunteer_id = $asId".executeUpdate()
@@ -63,7 +63,7 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
     }
     case class Add(as: Assignee) extends AssigneeOp {
       def execute {
-        Logger.info(s"adding $as")
+        logger.info(s"adding $as")
         val asId = SQL"insert into volunteer(name, email) values (${as.name}, ${as.email})".executeInsert()
         for (service <- as.services)
           SQL"insert into volunteer_service values ($asId, $service)".executeInsert()
@@ -71,7 +71,7 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
     }
     case class Remove(as: Assignee) extends AssigneeOp {
       def execute {
-        Logger.info(s"removing $as")
+        logger.info(s"removing $as")
         val asId = as.id
         val result = SQL"""
           delete from volunteer_service where volunteer_id = $asId;
@@ -79,7 +79,7 @@ class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeReposito
           delete from unavailable where volunteer_id = $asId;
           delete from volunteer where id = $asId;
         """.executeUpdate()
-        Logger.debug(s"$result geloescht")
+        logger.debug(s"$result geloescht")
       }
     }
     def calculateDifferences(old: List[Assignee], now: List[Assignee]): Seq[AssigneeOp] = {

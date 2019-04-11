@@ -6,7 +6,6 @@ import controllers.Security
 import java.time.LocalDate
 import javax.inject._
 import play.api.mvc._
-import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import models.smt._
@@ -61,7 +60,7 @@ class PlanController @Inject()(
 
   def create = isAuthenticated(parse.json) { implicit request =>
     parseBody[Range].map { range =>
-      Logger.debug(s"from $range")
+      logger.debug(s"from $range")
       val id = plans.create(range.from, range.to)
       Ok(routes.PlanController.show(id).absoluteURL)
     }
@@ -69,7 +68,7 @@ class PlanController @Inject()(
 
   def save(id: Long) = isAuthenticated(parse.json) { implicit request =>
     parseBody[PlanUpdateRequest].map { plan =>
-      Logger.debug(s"saving $plan")
+      logger.debug(s"saving $plan")
       plans.save(plan)
       Ok("saved")
     }

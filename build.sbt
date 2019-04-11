@@ -10,7 +10,11 @@ lazy val root = (project in file(".")).
 sources in (Compile, doc) := Seq.empty
 publishArtifact in (Compile, packageDoc) := false
 
-scalacOptions ++= Seq("-feature", "-Ypartial-unification")
+scalacOptions ++= Seq(
+  "-feature",
+  "-Ypartial-unification",
+  "-Xfatal-warnings"
+)
 
 libraryDependencies ++= Seq(
   guice,
