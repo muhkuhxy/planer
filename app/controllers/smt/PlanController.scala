@@ -18,20 +18,21 @@ object PlanController {
   implicit val ldRead = new Reads[LocalDate] {
     def reads(json: JsValue) = JsSuccess(LocalDate.parse(json.as[String]))
   }
+
   implicit val optStringRead = new Reads[Option[String]] {
     def reads(json: JsValue) = json match {
       case JsString(s) if s.nonEmpty => JsSuccess(Some(s))
       case _ => JsSuccess(None)
     }
   }
+
   implicit val optIntRead = new Reads[Option[Int]] {
     def reads(json: JsValue) = json match {
-      case JsNumber(n) => {
-        JsSuccess(Some(n.intValue))
-      }
+      case JsNumber(n) => JsSuccess(Some(n.intValue))
       case _ => JsSuccess(None)
     }
   }
+
   implicit val serviceFmt = Json.writes[Service]
   implicit val assignemntRequestRead = Json.format[Assignment]
   implicit val schedRead = Json.writes[Schedule]
@@ -42,7 +43,9 @@ object PlanController {
   implicit val planShellWrite = Json.writes[PlanShell]
 }
 
-class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanRepository, val controllerComponents: ControllerComponents) extends Security {
+class PlanController @Inject()(
+  val plans: PlanRepository,
+  val controllerComponents: ControllerComponents) extends Security {
   import PlanController._
 
   def list = isAuthenticated { _ =>
@@ -57,9 +60,7 @@ class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanReposit
   }
 
   def create = isAuthenticated(parse.json) { implicit request =>
-    for {
-      range <- parseBody[Range]
-    } yield {
+    parseBody[Range].map { range =>
       Logger.debug(s"from $range")
       val id = plans.create(range.from, range.to)
       Ok(routes.PlanController.show(id).absoluteURL)
@@ -67,9 +68,7 @@ class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanReposit
   }
 
   def save(id: Long) = isAuthenticated(parse.json) { implicit request =>
-    for {
-      plan <- parseBody[PlanUpdateRequest]
-    } yield {
+    parseBody[PlanUpdateRequest].map { plan =>
       Logger.debug(s"saving $plan")
       plans.save(plan)
       Ok("saved")
@@ -80,5 +79,5 @@ class PlanController @Inject()(assigness: AssigneeRepository, plans: PlanReposit
     plans.remove(id)
     Ok("deleted")
   }
-
 }
+

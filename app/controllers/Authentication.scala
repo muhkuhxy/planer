@@ -43,29 +43,24 @@ object AuthenticationController {
 class AuthenticationController @Inject()(db: Database, val controllerComponents: ControllerComponents) extends Security with I18nSupport {
   import AuthenticationController._
 
-  def checkCredentials(data: LoginData): Boolean = db.withConnection { implicit c =>
-    SQL"select password from appuser where username = ${data.name}"
-      .as(scalar[String].singleOpt)
-      .map(hashedPw => BCrypt.checkpw(data.password, hashedPw))
-      .getOrElse(false)
-  }
+  def checkCredentials(data: LoginData): Either[DomainError, String] =
+    db.withConnection { implicit c =>
+      SQL"select password from appuser where username = ${data.name}"
+        .as(scalar[String].singleOpt)
+        .filter(hashedPw => BCrypt.checkpw(data.password, hashedPw))
+        .toRight(InvalidCredentials)
+    }
 
   def login = Action(parse.json) { implicit request =>
 
-    def startSession(user: String) = Ok(user).withSession(request.session + ("username" -> user))
-
-    def verifyCredentials(isValid: Boolean, user: String): Either[DomainError, Result] =
-      if (isValid) {
-        Right(startSession(user))
-      } else {
-        Left(InvalidCredentials)
-      }
+    def startSession(user: String) =
+      Ok(user)
+        .withSession(request.session + ("username" -> user))
 
     for {
       data <- parseBody[LoginData]
-      valid = checkCredentials(data)
-      result <- verifyCredentials(valid, data.name)
-    } yield result
+      valid <- checkCredentials(data)
+    } yield startSession(data.name)
   }
 
   def user = isAuthenticated { implicit request =>

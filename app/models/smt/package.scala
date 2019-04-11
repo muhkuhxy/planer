@@ -9,6 +9,7 @@ import scala.language.postfixOps
 trait Helper {
 
   implicit def localDateOrdering: Ordering[LocalDate] = Ordering.fromLessThan(_ isBefore _)
+
   def localDateDescOrdering: Ordering[LocalDate] = localDateOrdering.reverse
 
   def services(implicit c: Connection): Iterable[Service] =
@@ -20,9 +21,15 @@ trait Helper {
     })
 
   val singleId = int("id").single
+
   val multiIds = int("id") *
+
   val idAndName = int("id") ~ str("name") map flatten *
-  def volunteers(implicit c: Connection) = SQL("select id, name from volunteer").as(idAndName)
-  def volunteersByName(implicit c: Connection) = volunteers.map(v => v._2 -> v._1).toMap
+
+  def volunteers(implicit c: Connection) =
+    SQL("select id, name from volunteer").as(idAndName)
+
+  def volunteersByName(implicit c: Connection) =
+    volunteers.map(v => v._2 -> v._1).toMap
 }
 
