@@ -15,11 +15,6 @@ trait Helper {
   def services(implicit c: Connection): Iterable[Service] =
     SQL"select id, name, slots from service order by id".as(Macro.namedParser[Service].*)
 
-  def indexByFirst[A, B](values: List[(A, B)]): Map[A, List[B]] =
-    values.groupBy(_._1).map({ case(k,v) =>
-      k -> v.map(_._2)
-    })
-
   val singleId = int("id").single
 
   val multiIds = int("id") *

@@ -1,109 +1,163 @@
 package models.smt
 
 import app.Application.logger
-import anorm._
-import anorm.SqlParser._
-import com.google.inject.ImplementedBy
-import java.sql.Connection
-import java.time._
-import java.time.format._
-import java.time.temporal._
-import javax.inject._
-import java.util.Date
-import play.api.Play.current
-import play.api.db._
-import scala.language.postfixOps
-import scala.language.implicitConversions
+import cats.implicits._
+import scala.concurrent._
+
+import play.api.db.slick._
+import slick.jdbc.JdbcProfile
+import slick.basic._
 
 case class Assignee(id: Int = -1, name: String, services: List[Int], email: Option[String] = None)
 
-@ImplementedBy(classOf[DefaultAssigneeRepository])
-trait AssigneeRepository {
-  def getAssignees: List[Assignee]
-  def getServices: List[Service]
-  def save(helpers: List[Assignee])
-}
+trait SlickAssigneeDb extends HasDatabaseConfigProvider[JdbcProfile] {
+  import profile.api._
 
-class DefaultAssigneeRepository @Inject()(db: Database) extends AssigneeRepository with Helper {
+  class ServiceTable(tag: Tag) extends Table[Service](tag, "service") {
+    def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
+    def name = column[String]("name")
+    def slots = column[Int]("slots")
 
-  def getServices = db.withConnection { implicit c =>
-    services.toList
+    def * = (id, name, slots).mapTo[Service]
   }
 
-  def getAssignees = db.withConnection { implicit c =>
-    val result = SQL"""
-      select v.id, v.name as volunteer, s.id as service, v.email from volunteer v
-      left join volunteer_service vs on v.id = vs.volunteer_id
-      left join service s on s.id = vs.service_id
-    """.as(int("id") ~
-      str("volunteer") ~
-      get[Option[Int]]("service") ~
-      get[Option[String]]("email") map (flatten) *)
-    val assignees = for {
-      ((id, name), grouped) <- result.groupBy(x => (x._1, x._2))
-    } yield Assignee(id, name, grouped.flatMap(_._3).toList.sorted, grouped.head._4)
-    assignees.toList.sortBy(_.name)
+  class AssigneeTable(tag: Tag) extends Table[AssigneeRow](tag, "volunteer") {
+    def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
+    def name = column[String]("name")
+    def email = column[Option[String]]("email")
+
+    def * = (id, name, email).mapTo[AssigneeRow]
   }
 
-  def save(helpers: List[Assignee]) = db.withConnection { implicit c =>
-    sealed trait AssigneeOp {
-      def execute()
-    }
-    case class Update(as: Assignee) extends AssigneeOp {
-      require(as.id > 0)
-      val asId = as.id
-      def execute {
-        logger.info(s"updating services $as with id $asId")
-        val result = SQL("update volunteer set name = {name}, email = {email} where id = {id}")
-          .on("name" -> as.name, "email" -> as.email, "id" -> asId).executeUpdate()
-        SQL"delete from volunteer_service where volunteer_id = $asId".executeUpdate()
-        for(service <- as.services)
-          SQL"insert into volunteer_service values ($asId, $service)".executeInsert()
-      }
-    }
-    case class Add(as: Assignee) extends AssigneeOp {
-      def execute {
-        logger.info(s"adding $as")
-        val asId = SQL"insert into volunteer(name, email) values (${as.name}, ${as.email})".executeInsert()
-        for (service <- as.services)
-          SQL"insert into volunteer_service values ($asId, $service)".executeInsert()
-      }
-    }
-    case class Remove(as: Assignee) extends AssigneeOp {
-      def execute {
-        logger.info(s"removing $as")
-        val asId = as.id
-        val result = SQL"""
-          delete from volunteer_service where volunteer_id = $asId;
-          delete from schedule_services where volunteer_id = $asId;
-          delete from unavailable where volunteer_id = $asId;
-          delete from volunteer where id = $asId;
-        """.executeUpdate()
-        logger.debug(s"$result geloescht")
-      }
-    }
-    def calculateDifferences(old: List[Assignee], now: List[Assignee]): Seq[AssigneeOp] = {
+  class Assignee2ServiceTable(tag: Tag) extends Table[(Int, Int)](tag, "volunteer_service") {
+    def serviceId = column[Int]("service_id")
+    def assigneeId = column[Int]("volunteer_id")
+
+    def assignee = foreignKey("vs_volunteer_fk", assigneeId, assigneeQuery)(_.id)
+    def service = foreignKey("vs_service_fk", serviceId, serviceQuery)(_.id)
+
+    def * = (serviceId, assigneeId)
+  }
+
+  class UnavailableTable(tag: Tag) extends Table[(Int, Int)](tag, "unavailable") {
+    def scheduleId = column[Int]("schedule_id")
+    def assigneeId = column[Int]("volunteer_id")
+
+    def * = (scheduleId, assigneeId)
+  }
+
+  class Schedule2ServiceTable(tag: Tag) extends Table[Schedule2ServiceRow](tag, "schedule_services") {
+    def assigneeId = column[Int]("volunteer_id")
+    def serviceId = column[Int]("service_id")
+    def scheduleId = column[Int]("schedule_id")
+    def shift = column[Int]("shift")
+
+    def * = (assigneeId, serviceId, scheduleId, shift).mapTo[Schedule2ServiceRow]
+  }
+
+  lazy val unavailableQuery = TableQuery[UnavailableTable]
+  lazy val serviceQuery = TableQuery[ServiceTable]
+  lazy val assigneeQuery = TableQuery[AssigneeTable]
+  lazy val assignee2Service = TableQuery[Assignee2ServiceTable]
+  lazy val schedule2Service = TableQuery[Schedule2ServiceTable]
+
+  def getServices: Future[Seq[Service]] =
+    db.run(serviceQuery.result)
+
+  def getAssignees(implicit ec: ExecutionContext): Future[List[Assignee]] =
+    db.run(flatAssignees.result.map {
+      _.groupBy { case (assignee, service) => assignee }
+        .map { case (a, group) => {
+          val services = group.map { case (_, service) => service.map(_.id) } collect { case Some(x) => x }
+          Assignee(a.id, a.name, services.toList, a.email)
+        }}.toList.sortBy(_.name)
+    })
+
+  case class AssigneeRow(id: Int, name: String, email: Option[String])
+  case class Schedule2ServiceRow(assigneeId: Int, serviceId: Int, scheduleId: Int,
+    shift: Int)
+
+  lazy val flatAssignees =
+    assigneeQuery
+      .joinLeft(assignee2Service).on { case (a, a2s) => a.id === a2s.assigneeId }
+      .joinLeft(serviceQuery).on { case ((a, a2s), s) => a2s.map(_.serviceId) === s.id }
+      .map { case ((assignee, _), service) => (assignee, service) }
+
+  def updateAssignee(a: Assignee): DBIO[Unit] = DBIO.seq(
+    assigneeQuery.filter(_.id === a.id)
+        .map(x => (x.name, x.email))
+        .update((a.name, a.email)),
+    removeServicesFor(a.id),
+    addServicesFor(a.id, a.services)
+  ).transactionally
+
+  def addAssignee(a: Assignee)(implicit ec: ExecutionContext): DBIO[Unit] = (
+    for {
+      id <- assigneeQuery returning assigneeQuery.map(_.id) += AssigneeRow(0, a.name, a.email)
+      _ <- addServicesFor(id, a.services)
+    } yield ()
+  ).transactionally
+
+  def removeServicesFor(assigneeId: Int) =
+    assignee2Service.filter(_.assigneeId === assigneeId).delete
+
+  def addServicesFor(assigneeId: Int, services: List[Int]) =
+    assignee2Service ++= services.map((assigneeId, _))
+
+  def removeAssignee(a: Assignee): DBIO[Unit] = DBIO.seq(
+    removeServicesFor(a.id),
+    schedule2Service.filter(_.assigneeId === a.id).delete,
+    unavailableQuery.filter(_.assigneeId === a.id).delete,
+    assigneeQuery.filter(_.id === a.id).delete
+  ).transactionally
+
+  def saveAssignees(previous: Seq[Assignee], current: List[Assignee])
+      (implicit ec: ExecutionContext): Future[List[Unit]] = {
+    sealed trait AssigneeOp
+    case class Update(as: Assignee) extends AssigneeOp
+    case class Add(as: Assignee) extends AssigneeOp
+    case class Remove(as: Assignee) extends AssigneeOp
+
+    def calculateDifferences(previous: Seq[Assignee], current: List[Assignee]): List[AssigneeOp] = {
       import scala.collection.mutable.ListBuffer
-      val oldMap = old.map( as => as.id -> as ).toMap
+      val prevById = previous.map( as => as.id -> as ).toMap
       var ops = ListBuffer.empty[AssigneeOp]
-      now.foreach { case as @ Assignee(id, name, services, email) =>
+      current.foreach { case as @ Assignee(id, name, services, email) =>
         if(id > 0) {
-          val existing = oldMap(id)
-          if(existing.services.toSet != services.toSet || existing.email != email || existing.name != name) {
+          val existing = prevById(id)
+          if(existing != as) {
             ops += Update(as)
           }
         } else {
           ops += Add(as)
         }
       }
-      val nowIds = now.map(_.id).toSet
-      val oldIds = old.map(_.id).toSet
-      val removeIds = oldIds.diff(nowIds).filter(_ > 0)
-      ops ++= removeIds.map(oldMap).map(Remove)
-      ops
+      val previousIds = previous.map(_.id).toSet
+      val currentIds = current.map(_.id).toSet
+      val removeIds = previousIds.diff(currentIds).filter(_ > 0)
+      ops ++= removeIds.map(prevById).map(Remove)
+      ops.toList
     }
-    val old = getAssignees
-    calculateDifferences(old, helpers) foreach (_.execute())
-  }
 
+    def execute(op: AssigneeOp): DBIO[Unit] =
+      op match {
+        case Add(a@Assignee(id, name, services, email)) => {
+          logger.info(s"adding $a")
+          addAssignee(a)
+        }
+        case Update(a@Assignee(id, name, services, email)) => {
+          require(id > 0)
+          logger.info(s"updating services $a with id $id")
+          updateAssignee(a)
+        }
+        case Remove(a) => {
+          logger.info(s"removing $a")
+          removeAssignee(a)
+        }
+      }
+
+    val actionPlan = calculateDifferences(previous, current)
+    val actions = actionPlan.map(execute)
+    db.run(DBIO.sequence(actions))
+  }
 }

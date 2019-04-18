@@ -2,13 +2,17 @@ package controllers.smt
 
 import app.Application._
 import cats.implicits._
-import controllers.Security
+import controllers._
 import java.time.LocalDate
 import javax.inject._
+import play.api.db.slick._
 import play.api.mvc._
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import models.smt._
+import slick.basic._
+import slick.jdbc.JdbcProfile
+import scala.concurrent._
 
 object PlanController {
 
@@ -39,43 +43,50 @@ object PlanController {
   implicit val rangeRead = Json.format[Range]
   implicit val partsRequestRead = Json.reads[PartsRequest]
   implicit val planUpdateRead = Json.reads[PlanUpdateRequest]
-  implicit val planShellWrite = Json.writes[PlanShell]
+  implicit val planShellWrite = Json.writes[PlanRow]
 }
 
 class PlanController @Inject()(
-  val plans: PlanRepository,
-  val controllerComponents: ControllerComponents) extends Security {
+  authenticated: UserAuthenticatedBuilder,
+  plans: PlanRepository,
+  val dbConfigProvider: DatabaseConfigProvider,
+  cc: ControllerComponents)(implicit ec: ExecutionContext)
+    extends AbstractController(cc)
+    with SlickPlanDb
+    with HasDatabaseConfigProvider[JdbcProfile] {
   import PlanController._
 
-  def list = isAuthenticated { _ =>
-    Ok(Json.toJson(plans.list))
+  def list = authenticated.async {
+    listPlans.map { plans =>
+      Ok(Json.toJson(plans))
+    }
   }
 
-  def show(id: Long) = isAuthenticated { _ =>
-    plans.find(id) match {
+  def show(id: Int) = authenticated.async {
+    getPlan(id).map {
       case Some(plan) => Right(Ok(Json.toJson(plan)))
       case _ => Left(NoPlan)
     }
   }
 
-  def create = isAuthenticated(parse.json) { implicit request =>
+  def create = authenticated(parse.json) { implicit request =>
     parseBody[Range].map { range =>
       logger.debug(s"from $range")
-      val id = plans.create(range.from, range.to)
-      Ok(routes.PlanController.show(id).absoluteURL)
+//      val id = plans.create(range.from, range.to)
+      Ok(routes.PlanController.show(3).absoluteURL)
     }
   }
 
-  def save(id: Long) = isAuthenticated(parse.json) { implicit request =>
+  def save(id: Long) = authenticated(parse.json) { implicit request =>
     parseBody[PlanUpdateRequest].map { plan =>
       logger.debug(s"saving $plan")
-      plans.save(plan)
+//      plans.save(plan)
       Ok("saved")
     }
   }
 
-  def remove(id: Long) = isAuthenticated { _ =>
-    plans.remove(id)
+  def remove(id: Long) = authenticated {
+//    plans.remove(id)
     Ok("deleted")
   }
 }

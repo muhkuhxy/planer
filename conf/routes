@@ -8,9 +8,9 @@ GET    /territory/:id controllers.territory.TerritoryController.show(id: String)
 
 GET    /api/plan      controllers.smt.PlanController.list
 POST   /api/plan      controllers.smt.PlanController.create
-GET    /api/plan/:id  controllers.smt.PlanController.show(id: Long)
-PUT    /api/plan/:id  controllers.smt.PlanController.save(id: Long)
-DELETE /api/plan/:id  controllers.smt.PlanController.remove(id: Long)
+GET    /api/plan/:id  controllers.smt.PlanController.show(id: Int)
+PUT    /api/plan/:id  controllers.smt.PlanController.save(id: Int)
+DELETE /api/plan/:id  controllers.smt.PlanController.remove(id: Int)
 
 GET    /api/assignees controllers.smt.AssigneeController.list
 PUT    /api/assignees controllers.smt.AssigneeController.save
