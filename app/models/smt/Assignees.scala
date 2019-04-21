@@ -36,7 +36,7 @@ trait SlickAssigneeDb extends HasDatabaseConfigProvider[JdbcProfile] {
     def assignee = foreignKey("vs_volunteer_fk", assigneeId, assigneeQuery)(_.id)
     def service = foreignKey("vs_service_fk", serviceId, serviceQuery)(_.id)
 
-    def * = (serviceId, assigneeId)
+    def * = (assigneeId, serviceId)
   }
 
   class UnavailableTable(tag: Tag) extends Table[(Int, Int)](tag, "unavailable") {
@@ -135,7 +135,7 @@ trait SlickAssigneeDb extends HasDatabaseConfigProvider[JdbcProfile] {
       val previousIds = previous.map(_.id).toSet
       val currentIds = current.map(_.id).toSet
       val removeIds = previousIds.diff(currentIds).filter(_ > 0)
-      ops ++= removeIds.map(prevById).map(Remove)
+      ops ++= removeIds.map(prevById andThen Remove)
       ops.toList
     }
 

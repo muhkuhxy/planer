@@ -36,6 +36,13 @@ class AssigneeController @Inject()(
         previous <- EitherT.right[DomainError](getAssignees)
         _ <- EitherT.right[DomainError](saveAssignees(previous, current))
       } yield Ok("assignees saved")).value
+//    recover {
+//      case e: java.sql.BatchUpdateException => {
+//        logger.error("nextException", e
+//          .getNextException)
+//        Right(BadRequest("kaputt"))
+//      }
+//    }
   }
 
   def listServices = authenticated.async {

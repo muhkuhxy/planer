@@ -30,8 +30,7 @@ object Application {
     EitherT.fromEither[F](parseBody[T])
 
   implicit def toHttpResult[F[_], E <: DomainError](e: F[Either[E, PlayResult]])
-    (implicit f:
-    Functor[F]): F[PlayResult] =
+    (implicit f: Functor[F]): F[PlayResult] =
     f.map(e)(_.fold(mapErrors, identity))
 
   implicit def toHttpResult(e: Either[DomainError, PlayResult]): PlayResult =
