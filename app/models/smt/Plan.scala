@@ -144,22 +144,27 @@ trait SlickPlanDb extends SlickAssigneeDb with HasDatabaseConfigProvider[JdbcPro
       .joinLeft(assigneeQuery).on { case ((_, s2s), a) => s2s.map(_.assigneeId) === a.id }
       .map { case ((schedule, s2s), assignee) => (schedule, s2s, assignee) }
 
-//  schedules(id: Long)(implicit c: Connection): List[MeetingDay] =
-//    SQL"""
-//      select s.id, day, volunteer_id, service_id, shift, slots from schedule s
-//      left join schedule_services ss on s.id = ss.schedule_id
-//      left join service on service.id = ss.service_id
-//      left join volunteer v on v.id = volunteer_id
-//      where plan_id = $id
-//    """.as(parser *)
-//    .groupBy(_._1)
-//    .mapValues(_.map(_._2).flatten)
-//    .map { case (md, as) => md.copy(assignments = as) }
-//    .toList
-//    .sortBy(_.day)
+  def deleteScheduleRefs(scheduleId: Int): DBIO[(Int, Int)] =
+    unavailableQuery.filter(_.scheduleId === scheduleId).delete zip
+      schedule2Service.filter(_.scheduleId === scheduleId).delete
 
-//  case class MeetingDay(id: Int, day: LocalDate, assignments: List[AssignmentExtra])
-//  case class AssignmentExtra(volunteerId: Int, serviceId: Int, shift: Int, slots: Int)
+  def savePlan(plan: PlanUpdateRequest)(implicit ec: ExecutionContext):
+    Future[List[Unit]] = {
+    val partUpdates: List[DBIO[Unit]] = plan.parts.map { part =>
+      for {
+        _ <- scheduleQuery.filter(_.id === part.id).map(_.date).update(part.date)
+        _ <- deleteScheduleRefs(part.id)
+        _ <- unavailableQuery ++= part.unavailable.map(assigneeId => (part.id, assigneeId))
+        assignments = part.assignments.flatMap { case Assignment(serviceId, shifts) =>
+          shifts.zipWithIndex collect { case (Some(assigneeId), shift) =>
+            Schedule2ServiceRow(assigneeId, serviceId, part.id, shift)
+          }
+        }
+        _ <- schedule2Service ++= assignments
+      } yield ()
+    }
+    db.run(DBIO.sequence(partUpdates))
+  }
 }
 
 @ImplementedBy(classOf[DefaultPlanRepository])
@@ -172,28 +177,6 @@ trait PlanRepository {
 }
 
 class DefaultPlanRepository @Inject()() extends PlanRepository with Helper {
-
-  def save(plan: PlanUpdateRequest) = ???
-//  db.withConnection { implicit c =>
-//    plan.parts.foreach { part =>
-//      SQL("update schedule set day = {date} where id = {id}")
-//        .on('date -> toDate(part.date), 'id -> part.id)
-//        .executeUpdate()
-//      val deleted = deleteScheduleRefs(part.id)
-//      logger.debug(s"deleted (unavailable, assignments): $deleted")
-//      part.unavailable.foreach { whoId =>
-//        SQL"insert into unavailable values (${part.id}, $whoId)".executeInsert()
-//      }
-//      part.assignments.foreach { case Assignment(serviceId, shifts) =>
-//        shifts.zipWithIndex foreach {
-//          case (Some(volunteerId), shift) =>
-//            SQL"insert into schedule_services values ($volunteerId, $serviceId, ${part.id}, $shift)"
-//              .executeInsert()
-//          case _ =>
-//        }
-//      }
-//    }
-//  }
 
   def remove(id: Long) = ???
 //  db.withConnection { implicit c =>

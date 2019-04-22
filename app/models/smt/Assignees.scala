@@ -118,7 +118,8 @@ trait SlickAssigneeDb extends HasDatabaseConfigProvider[JdbcProfile] {
     case class Add(as: Assignee) extends AssigneeOp
     case class Remove(as: Assignee) extends AssigneeOp
 
-    def calculateDifferences(previous: Seq[Assignee], current: List[Assignee]): List[AssigneeOp] = {
+    def calculateDifferences(previous: Seq[Assignee], current: Seq[Assignee]):
+    List[AssigneeOp] = {
       import scala.collection.mutable.ListBuffer
       val prevById = previous.map( as => as.id -> as ).toMap
       var ops = ListBuffer.empty[AssigneeOp]

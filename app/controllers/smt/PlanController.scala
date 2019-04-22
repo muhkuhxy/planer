@@ -1,6 +1,7 @@
 package controllers.smt
 
 import app.Application._
+import cats.data._
 import cats.implicits._
 import controllers._
 import java.time.LocalDate
@@ -77,12 +78,11 @@ class PlanController @Inject()(
     }
   }
 
-  def save(id: Long) = authenticated(parse.json) { implicit request =>
-    parseBody[PlanUpdateRequest].map { plan =>
-      logger.debug(s"saving $plan")
-//      plans.save(plan)
-      Ok("saved")
-    }
+  def save(id: Long) = authenticated(parse.json).async { implicit request =>
+    (for {
+      plan <- parseBodyT[PlanUpdateRequest, Future]
+      _ <- EitherT.right[DomainError](savePlan(plan))
+    } yield Ok("saved")).value
   }
 
   def remove(id: Long) = authenticated {
