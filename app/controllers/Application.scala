@@ -15,6 +15,8 @@ import play.api.Logger
 import scala.language.implicitConversions
 import scala.concurrent._
 
+case class ErrorDetails(reason: String)
+
 object Application {
   val logger = Logger("application")
 
@@ -40,6 +42,8 @@ object Application {
     EitherT[Future, DomainError, A] =
     EitherT.right[DomainError](value)
 
+  implicit val errorDetailsWrites = Json.writes[ErrorDetails]
+
   def mapErrors(e: DomainError): PlayResult = e match {
     case JsonParseError(json, errors) => {
       logger.error(s"invalid json in $json")
@@ -48,6 +52,9 @@ object Application {
     }
     case InvalidCredentials => Unauthorized
     case NoPlan => NotFound
+    case InvalidDateRange(reason) => BadRequest {
+      Json.toJson(ErrorDetails(reason))
+    }
   }
 
   implicit def localDateOrdering: Ordering[LocalDate] = Ordering.fromLessThan(_ isBefore _)

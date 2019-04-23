@@ -68,7 +68,7 @@ class PlanController @Inject()(
     {
       for {
         range <- parseBodyT[Range]
-        id <- right(service.create(range.from, range.to))
+        id <- service.create(range.from, range.to)
       } yield Ok(routes.PlanController.show(id).absoluteURL)
     }.value
   }

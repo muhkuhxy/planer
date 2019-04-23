@@ -1,6 +1,8 @@
 package services
 
+import app.Application._
 import cats.data._
+import cats.implicits._
 import models.smt._
 import scala.concurrent._
 import java.time.LocalDate
@@ -24,8 +26,12 @@ class PlanService @Inject()
       }
     }
 
-  def create(from: LocalDate, to: LocalDate): Future[Int] =
-    createPlan(from, to)
+  def create(from: LocalDate, to: LocalDate): EitherT[Future, DomainError, Int] =
+    if (from.isBefore(to)) {
+      EitherT.right(createPlan(from, to))
+    } else {
+      EitherT.leftT(InvalidDateRange("from must be less than to"))
+    }
 
   def save(plan: PlanUpdateRequest): Future[List[Unit]] =
     savePlan(plan)
