@@ -16,12 +16,11 @@ import javax.inject._
 import scala.concurrent._
 
 class AssigneeController @Inject()(
-  val dbConfigProvider: DatabaseConfigProvider,
   cc: ControllerComponents,
+  val dbConfigProvider: DatabaseConfigProvider,
   authenticated: UserAuthenticatedBuilder)(implicit ec: ExecutionContext)
     extends AbstractController(cc)
-    with SlickAssigneeDb
-    with HasDatabaseConfigProvider[JdbcProfile] {
+    with SlickAssigneeDb {
 
   implicit val assigneeFormat = Json.format[Assignee]
   implicit val serviceFormat = Json.format[Service]
@@ -31,22 +30,17 @@ class AssigneeController @Inject()(
   }
 
   def save = authenticated.async(parse.json) { implicit request =>
-    (for {
+    {
+      for {
         current <- parseBodyT[List[Assignee], Future]
         previous <- EitherT.right[DomainError](getAssignees)
         _ <- EitherT.right[DomainError](saveAssignees(previous, current))
-      } yield Ok("assignees saved")).value
-//    recover {
-//      case e: java.sql.BatchUpdateException => {
-//        logger.error("nextException", e
-//          .getNextException)
-//        Right(BadRequest("kaputt"))
-//      }
-//    }
+      } yield Ok("assignees saved")
+    }.value
   }
 
   def listServices = authenticated.async {
-    getServices.map(ss => Ok(Json.toJson(ss)))
+    getServices.map(services => Ok(Json.toJson(services)))
   }
 
 }

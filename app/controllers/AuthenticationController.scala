@@ -18,12 +18,6 @@ import play.api.libs.json._
 import slick.jdbc.JdbcProfile
 import scala.concurrent._
 
-final case class LoginData(name: String, password: String)
-
-object AuthenticationController {
-  implicit val loginReads = Json.reads[LoginData]
-}
-
 class AuthenticationController @Inject()(
   cc: ControllerComponents,
   authenticated: UserAuthenticatedBuilder,
@@ -64,3 +58,10 @@ class AuthenticationController @Inject()(
     Ok(user)
       .withSession(r.session + ("username" -> user))
 }
+
+final case class LoginData(name: String, password: String)
+
+object AuthenticationController {
+  implicit val loginReads = Json.reads[LoginData]
+}
+

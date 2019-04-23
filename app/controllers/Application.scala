@@ -4,6 +4,7 @@ import cats._
 import cats.data._
 import cats.syntax.functor._
 import cats.implicits._
+import java.time.LocalDate
 import play.api.http.Writeable
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
@@ -49,6 +50,8 @@ object Application {
     case InvalidCredentials => Unauthorized
     case NoPlan => NotFound
   }
+
+  implicit def localDateOrdering: Ordering[LocalDate] = Ordering.fromLessThan(_ isBefore _)
+
+  def localDateDescOrdering: Ordering[LocalDate] = localDateOrdering.reverse
 }
-
-

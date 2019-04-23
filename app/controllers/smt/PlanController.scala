@@ -15,6 +15,49 @@ import slick.basic._
 import slick.jdbc.JdbcProfile
 import scala.concurrent._
 
+class PlanController @Inject()(
+  val dbConfigProvider: DatabaseConfigProvider,
+  cc: ControllerComponents,
+  authenticated: UserAuthenticatedBuilder)(implicit ec: ExecutionContext)
+    extends AbstractController(cc) with SlickPlanDb {
+  import PlanController._
+
+  def list = authenticated.async {
+    listPlans.map { plans =>
+      Ok(Json.toJson(plans))
+    }
+  }
+
+  def show(id: Int) = authenticated.async {
+    getPlan(id).map {
+      case Some(plan) => Right(Ok(Json.toJson(plan)))
+      case _ => Left(NoPlan)
+    }
+  }
+
+  def create = authenticated(parse.json).async { implicit request =>
+    {
+      for {
+        range <- parseBodyT[Range, Future]
+        id <- EitherT.right[DomainError](createPlan(range.from, range.to))
+      } yield Ok(routes.PlanController.show(id).absoluteURL)
+    }.value
+  }
+
+  def save(id: Long) = authenticated(parse.json).async { implicit request =>
+    {
+      for {
+        plan <- parseBodyT[PlanUpdateRequest, Future]
+        _ <- EitherT.right[DomainError](savePlan(plan))
+      } yield Ok("saved")
+    }.value
+  }
+
+  def remove(id: Int) = authenticated.async {
+    removePlan(id) map { _ => Ok("deleted")}
+  }
+}
+
 object PlanController {
 
   case class Range(from: LocalDate, to: LocalDate)
@@ -46,48 +89,3 @@ object PlanController {
   implicit val planUpdateRead = Json.reads[PlanUpdateRequest]
   implicit val planShellWrite = Json.writes[PlanRow]
 }
-
-class PlanController @Inject()(
-  authenticated: UserAuthenticatedBuilder,
-  plans: PlanRepository,
-  val dbConfigProvider: DatabaseConfigProvider,
-  cc: ControllerComponents)(implicit ec: ExecutionContext)
-    extends AbstractController(cc)
-    with SlickPlanDb
-    with HasDatabaseConfigProvider[JdbcProfile] {
-  import PlanController._
-
-  def list = authenticated.async {
-    listPlans.map { plans =>
-      Ok(Json.toJson(plans))
-    }
-  }
-
-  def show(id: Int) = authenticated.async {
-    getPlan(id).map {
-      case Some(plan) => Right(Ok(Json.toJson(plan)))
-      case _ => Left(NoPlan)
-    }
-  }
-
-  def create = authenticated(parse.json) { implicit request =>
-    parseBody[Range].map { range =>
-      logger.debug(s"from $range")
-//      val id = plans.create(range.from, range.to)
-      Ok(routes.PlanController.show(3).absoluteURL)
-    }
-  }
-
-  def save(id: Long) = authenticated(parse.json).async { implicit request =>
-    (for {
-      plan <- parseBodyT[PlanUpdateRequest, Future]
-      _ <- EitherT.right[DomainError](savePlan(plan))
-    } yield Ok("saved")).value
-  }
-
-  def remove(id: Long) = authenticated {
-//    plans.remove(id)
-    Ok("deleted")
-  }
-}
-
