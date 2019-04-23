@@ -17,10 +17,6 @@ object PlanController {
 
   case class Range(from: LocalDate, to: LocalDate)
 
-  implicit val ldRead = new Reads[LocalDate] {
-    def reads(json: JsValue) = JsSuccess(LocalDate.parse(json.as[String]))
-  }
-
   implicit val optStringRead = new Reads[Option[String]] {
     def reads(json: JsValue) = json match {
       case JsString(s) if s.nonEmpty => JsSuccess(Some(s))

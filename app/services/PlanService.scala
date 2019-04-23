@@ -30,7 +30,7 @@ class PlanService @Inject()
     if (from.isBefore(to)) {
       EitherT.right(createPlan(from, to))
     } else {
-      EitherT.leftT(InvalidDateRange("from must be less than to"))
+      EitherT.leftT(InvalidDateRange)
     }
 
   def save(plan: PlanUpdateRequest): Future[List[Unit]] =

@@ -15,7 +15,17 @@ import play.api.Logger
 import scala.language.implicitConversions
 import scala.concurrent._
 
-case class ErrorDetails(reason: String)
+object ErrorDetails {
+  def apply(error: Product): ErrorDetails =
+    new ErrorDetails(error.productPrefix)
+
+  def apply(error: Product, errors: JsErrors): ErrorDetails =
+    new ErrorDetails(error.productPrefix, parseErrors = Some(JsError.toJson(errors)))
+}
+
+case class ErrorDetails(`type`: String,
+  reason: Option[String] = None,
+  parseErrors: Option[JsValue] = None)
 
 object Application {
   val logger = Logger("application")
@@ -45,15 +55,17 @@ object Application {
   implicit val errorDetailsWrites = Json.writes[ErrorDetails]
 
   def mapErrors(e: DomainError): PlayResult = e match {
-    case JsonParseError(json, errors) => {
+    case e @ JsonParseError(json, errors) => {
       logger.error(s"invalid json in $json")
       logger.error(s"errors: $errors")
-      BadRequest
+      BadRequest {
+        Json.toJson(ErrorDetails(e, errors))
+      }
     }
     case InvalidCredentials => Unauthorized
     case NoPlan => NotFound
-    case InvalidDateRange(reason) => BadRequest {
-      Json.toJson(ErrorDetails(reason))
+    case e @ InvalidDateRange => BadRequest {
+      Json.toJson(ErrorDetails(e))
     }
   }
 
