@@ -5,6 +5,7 @@ import cats.data._
 import cats.implicits._
 import javax.inject._
 import models._
+import models.DomainError._
 import org.mindrot.jbcrypt.BCrypt
 import play.api.mvc._
 import play.api.mvc.Results._

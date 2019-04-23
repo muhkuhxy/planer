@@ -5,6 +5,7 @@ import cats.data._
 import cats.syntax.functor._
 import cats.implicits._
 import java.time.LocalDate
+import models.DomainError._
 import play.api.http.Writeable
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
@@ -17,13 +18,6 @@ import scala.concurrent._
 object Application {
   val logger = Logger("application")
 
-  sealed abstract class DomainError
-  case class JsonParseError(json: JsValue, errors: JsErrors) extends DomainError
-  case object InvalidCredentials extends DomainError
-  case object NoPlan extends DomainError
-
-  type JsErrors = Seq[(JsPath, Seq[JsonValidationError])]
-
   def parseBody[T](implicit request: Request[JsValue], reads: Reads[T]): Either[JsonParseError, T] =
     request.body.validate[T].asEither.leftMap(JsonParseError(request.body, _))
 
@@ -31,9 +25,9 @@ object Application {
   Applicative[Future]): EitherT[Future, JsonParseError, T] =
     EitherT.fromEither[Future](parseBody[T])
 
-  implicit def toHttpResult[F[_], E <: DomainError](e: F[Either[E, PlayResult]])
-    (implicit f: Functor[F]): F[PlayResult] =
-    f.map(e)(_.fold(mapErrors, identity))
+  implicit def toHttpResult[F[_] : Functor, E <: DomainError]
+    (e: F[Either[E, PlayResult]]): F[PlayResult] =
+    Functor[F].map(e)(_.fold(mapErrors, identity))
 
   implicit def toHttpResult(e: Either[DomainError, PlayResult]): PlayResult =
     toHttpResult[Id, DomainError](e)

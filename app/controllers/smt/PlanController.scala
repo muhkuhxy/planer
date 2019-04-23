@@ -6,13 +6,11 @@ import cats.implicits._
 import controllers._
 import java.time.LocalDate
 import javax.inject._
-import play.api.db.slick._
 import play.api.mvc._
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import models.smt._
-import slick.basic._
-import slick.jdbc.JdbcProfile
+import services.PlanService
 import scala.concurrent._
 
 object PlanController {
@@ -48,30 +46,29 @@ object PlanController {
 }
 
 class PlanController @Inject()(
-  val dbConfigProvider: DatabaseConfigProvider,
+  service: PlanService,
   cc: ControllerComponents,
   authenticated: UserAuthenticatedBuilder)(implicit ec: ExecutionContext)
-    extends AbstractController(cc) with SlickPlanDb {
+    extends AbstractController(cc) {
   import PlanController._
 
   def list = authenticated.async {
-    listPlans.map { plans =>
+    service.list.map { plans =>
       Ok(Json.toJson(plans))
     }
   }
 
   def show(id: Int) = authenticated.async {
-    getPlan(id).map {
-      case Some(plan) => Right(Ok(Json.toJson(plan)))
-      case _ => Left(NoPlan)
-    }
+    service.get(id).map {
+      plan => Ok(Json.toJson(plan))
+    }.value
   }
 
   def create = authenticated(parse.json).async { implicit request =>
     {
       for {
         range <- parseBodyT[Range]
-        id <- right(createPlan(range.from, range.to))
+        id <- right(service.create(range.from, range.to))
       } yield Ok(routes.PlanController.show(id).absoluteURL)
     }.value
   }
@@ -80,12 +77,12 @@ class PlanController @Inject()(
     {
       for {
         plan <- parseBodyT[PlanUpdateRequest]
-        _ <- right(savePlan(plan))
+        _ <- right(service.save(plan))
       } yield Ok("saved")
     }.value
   }
 
   def remove(id: Int) = authenticated.async {
-    removePlan(id) map { _ => Ok("deleted")}
+    service.delete(id) map { _ => Ok("deleted")}
   }
 }
