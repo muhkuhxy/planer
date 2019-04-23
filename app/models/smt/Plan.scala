@@ -69,7 +69,7 @@ trait SlickPlanDb extends SlickAssigneeDb with HasDatabaseConfigProvider[JdbcPro
 
   def listPlans: Future[Seq[PlanRow]] = db.run(planQuery.sortBy(_.id.desc).result)
 
-  def getPlanRow(id: Int): DBIO[Option[PlanRow]] =
+  private def getPlanRow(id: Int): DBIO[Option[PlanRow]] =
     planQuery.filter(_.id === id).result.headOption
 
   type DBIOpt[A] = OptionT[DBIO, A]
@@ -93,8 +93,8 @@ trait SlickPlanDb extends SlickAssigneeDb with HasDatabaseConfigProvider[JdbcPro
         services <- OptionT.liftF(serviceQuery.result: DBIO[Seq[Service]])
         serviceMap = services.map(s => s.id -> s).toMap
         scheduleRows <- OptionT.liftF(scheduleWithAssigneeResult(id))
-        unavailabe <- OptionT.liftF(unavailableOn(scheduleRows.map {
-          case (schedule, _, _) => schedule.id }))
+        scheduleIds = scheduleRows.map { case (schedule, _, _) => schedule.id }
+        unavailabe <- OptionT.liftF(unavailableOn(scheduleIds))
       } yield {
         val schedules = scheduleRows
           .groupBy { case (schedule, _, _) => schedule }
@@ -117,10 +117,10 @@ trait SlickPlanDb extends SlickAssigneeDb with HasDatabaseConfigProvider[JdbcPro
     )
   }
 
-  def buildAssignment(
+  private def buildAssignment(
     groupOfService: Seq[(ScheduleRow, Option[Schedule2ServiceRow], Option[AssigneeRow])],
     service: Service
-  ) = {
+  ): Assignment = {
     val assignmentsByShift = groupOfService
       .collect { case (_, Some(s2s), Some(assignee)) => s2s.shift -> assignee.id }
       .toMap
@@ -132,22 +132,22 @@ trait SlickPlanDb extends SlickAssigneeDb with HasDatabaseConfigProvider[JdbcPro
     Assignment(service.id, shifts.toList)
   }
 
-  def unavailableOn(scheduleIds: Seq[Int])(implicit ec: ExecutionContext):
+  private def unavailableOn(scheduleIds: Seq[Int])(implicit ec: ExecutionContext):
     DBIO[Map[Int, Seq[Int]]] =
     unavailableQuery.filter(_.scheduleId inSet scheduleIds).result.map { indexByFirst }
 
   type FlatScheduleRow = (ScheduleRow, Option[Schedule2ServiceRow], Option[AssigneeRow])
 
-  def scheduleWithAssigneeQuery(planId: Int) =
+  private def scheduleWithAssigneeQuery(planId: Int) =
     scheduleQuery.filter(_.planId === planId)
       .joinLeft(schedule2Service).on { case (schedule, s2s) => schedule.id === s2s.scheduleId }
       .joinLeft(assigneeQuery).on { case ((_, s2s), a) => s2s.map(_.assigneeId) === a.id }
       .map { case ((schedule, s2s), assignee) => (schedule, s2s, assignee) }
 
-  def scheduleWithAssigneeResult(planId: Int): DBIO[Seq[FlatScheduleRow]] =
+  private def scheduleWithAssigneeResult(planId: Int): DBIO[Seq[FlatScheduleRow]] =
     scheduleWithAssigneeQuery(planId).result
 
-  def deleteScheduleRefs(scheduleId: Int): DBIO[(Int, Int)] =
+  private def deleteScheduleRefs(scheduleId: Int): DBIO[(Int, Int)] =
     unavailableQuery.filter(_.scheduleId === scheduleId).delete zip
       schedule2Service.filter(_.scheduleId === scheduleId).delete
 
@@ -180,9 +180,8 @@ trait SlickPlanDb extends SlickAssigneeDb with HasDatabaseConfigProvider[JdbcPro
     }
   }
 
-
   def createPlan(from: LocalDate, to: LocalDate)(implicit ec: ExecutionContext):
-  Future[Int] = {
+    Future[Int] = {
     val newPlan = PlanRow(-1, s"${from.format(dateFormat)} bis ${to.format(dateFormat)}")
     db.run {
       {
@@ -197,12 +196,16 @@ trait SlickPlanDb extends SlickAssigneeDb with HasDatabaseConfigProvider[JdbcPro
 
   val dateFormat = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
-  def daysBetween(from: LocalDate, to: LocalDate, weekDays: Seq[DayOfWeek]): Stream[LocalDate] = {
+  private def daysBetween(from: LocalDate, to: LocalDate, weekDays: Seq[DayOfWeek]):
+    Stream[LocalDate] = {
     lazy val loopingWeekdays: Stream[DayOfWeek] = weekDays.toStream #::: loopingWeekdays
-    // drop first day of week if from is the same DOW, otherwise we skip e.g. from Friday to Friday
-    // from will be included anyway b/c of scanLeft
-    val fixedWeekdays = loopingWeekdays.dropWhile(dow => dow == from.getDayOfWeek)
-    val weekdayAdjusters = fixedWeekdays.map(TemporalAdjusters.next)
+
+    // drop first day of week if from is the same DOW
+    // otherwise the first `next` call would skip e.g. from Friday to Friday
+    // from will be included anyway by scanLeft
+    val weekdayAdjusters = loopingWeekdays
+      .dropWhile(dow => dow == from.getDayOfWeek)
+      .map(TemporalAdjusters.next)
 
     weekdayAdjusters.scanLeft(from)((date, nextWeekday) => {
       date `with` nextWeekday

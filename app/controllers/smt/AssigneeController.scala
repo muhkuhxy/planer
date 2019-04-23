@@ -26,21 +26,24 @@ class AssigneeController @Inject()(
   implicit val serviceFormat = Json.format[Service]
 
   def list = authenticated.async { _ =>
-    getAssignees.map(as => Ok(Json.toJson(as)))
+    getAssignees.map {
+      assignees => Ok(Json.toJson(assignees))
+    }
   }
 
   def save = authenticated.async(parse.json) { implicit request =>
     {
       for {
-        current <- parseBodyT[List[Assignee], Future]
-        previous <- EitherT.right[DomainError](getAssignees)
-        _ <- EitherT.right[DomainError](saveAssignees(previous, current))
+        current <- parseBodyT[List[Assignee]]
+        previous <- right(getAssignees)
+        _ <- right(saveAssignees(previous, current))
       } yield Ok("assignees saved")
     }.value
   }
 
   def listServices = authenticated.async {
-    getServices.map(services => Ok(Json.toJson(services)))
+    getServices.map {
+      services => Ok(Json.toJson(services))
+    }
   }
-
 }

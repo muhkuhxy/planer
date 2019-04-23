@@ -27,8 +27,9 @@ object Application {
   def parseBody[T](implicit request: Request[JsValue], reads: Reads[T]): Either[JsonParseError, T] =
     request.body.validate[T].asEither.leftMap(JsonParseError(request.body, _))
 
-  def parseBodyT[T, F[_]: Applicative](implicit request: Request[JsValue], reads: Reads[T]): EitherT[F, JsonParseError, T] =
-    EitherT.fromEither[F](parseBody[T])
+  def parseBodyT[T](implicit request: Request[JsValue], reads: Reads[T], f:
+  Applicative[Future]): EitherT[Future, JsonParseError, T] =
+    EitherT.fromEither[Future](parseBody[T])
 
   implicit def toHttpResult[F[_], E <: DomainError](e: F[Either[E, PlayResult]])
     (implicit f: Functor[F]): F[PlayResult] =
@@ -40,6 +41,10 @@ object Application {
   implicit class EitherOps[E, A](val either: Either[E, A]) {
     def eitherT[F[_]: Applicative]: EitherT[F, E, A] = EitherT.fromEither[F](either)
   }
+
+  def right[A](value: Future[A])(implicit f: Functor[Future]):
+    EitherT[Future, DomainError, A] =
+    EitherT.right[DomainError](value)
 
   def mapErrors(e: DomainError): PlayResult = e match {
     case JsonParseError(json, errors) => {
