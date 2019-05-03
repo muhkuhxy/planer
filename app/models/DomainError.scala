@@ -2,7 +2,7 @@ package models
 
 import play.api.libs.json._
 
-object DomainError {
+object domainError {
   type JsErrors = Seq[(JsPath, Seq[JsonValidationError])]
 
   sealed abstract class DomainError

@@ -1,65 +1,15 @@
 package models.smt
 
-import app.Application.logger
-import cats.implicits._
 import scala.concurrent._
 
-import play.api.db.slick._
-import slick.jdbc.JdbcProfile
-import slick.basic._
-
-case class Assignee(id: Int = -1, name: String, services: List[Int], email: Option[String] = None)
-
-trait SlickAssigneeDb extends HasDatabaseConfigProvider[JdbcProfile] {
+trait SlickAssigneeDb extends Tables {
   import profile.api._
 
-  class ServiceTable(tag: Tag) extends Table[Service](tag, "service") {
-    def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
-    def name = column[String]("name")
-    def slots = column[Int]("slots")
-
-    def * = (id, name, slots).mapTo[Service]
-  }
-
-  class AssigneeTable(tag: Tag) extends Table[AssigneeRow](tag, "volunteer") {
-    def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
-    def name = column[String]("name")
-    def email = column[Option[String]]("email")
-
-    def * = (id, name, email).mapTo[AssigneeRow]
-  }
-
-  class Assignee2ServiceTable(tag: Tag) extends Table[(Int, Int)](tag, "volunteer_service") {
-    def serviceId = column[Int]("service_id")
-    def assigneeId = column[Int]("volunteer_id")
-
-    def assignee = foreignKey("vs_volunteer_fk", assigneeId, assigneeQuery)(_.id)
-    def service = foreignKey("vs_service_fk", serviceId, serviceQuery)(_.id)
-
-    def * = (assigneeId, serviceId)
-  }
-
-  class UnavailableTable(tag: Tag) extends Table[(Int, Int)](tag, "unavailable") {
-    def scheduleId = column[Int]("schedule_id")
-    def assigneeId = column[Int]("volunteer_id")
-
-    def * = (scheduleId, assigneeId)
-  }
-
-  class Schedule2ServiceTable(tag: Tag) extends Table[Schedule2ServiceRow](tag, "schedule_services") {
-    def assigneeId = column[Int]("volunteer_id")
-    def serviceId = column[Int]("service_id")
-    def scheduleId = column[Int]("schedule_id")
-    def shift = column[Int]("shift")
-
-    def * = (assigneeId, serviceId, scheduleId, shift).mapTo[Schedule2ServiceRow]
-  }
-
-  lazy val unavailableQuery = TableQuery[UnavailableTable]
-  lazy val serviceQuery = TableQuery[ServiceTable]
-  lazy val assigneeQuery = TableQuery[AssigneeTable]
-  lazy val assignee2Service = TableQuery[Assignee2ServiceTable]
-  lazy val schedule2Service = TableQuery[Schedule2ServiceTable]
+  lazy val flatAssignees =
+    assigneeQuery
+      .joinLeft(assignee2Service).on { case (a, a2s) => a.id === a2s.assigneeId }
+      .joinLeft(serviceQuery).on { case ((a, a2s), s) => a2s.map(_.serviceId) === s.id }
+      .map { case ((assignee, _), service) => (assignee, service) }
 
   def getServices: Future[Seq[Service]] =
     db.run(serviceQuery.result)
@@ -72,16 +22,6 @@ trait SlickAssigneeDb extends HasDatabaseConfigProvider[JdbcProfile] {
           Assignee(a.id, a.name, services.toList, a.email)
         }}.toList.sortBy(_.name)
     })
-
-  case class AssigneeRow(id: Int, name: String, email: Option[String])
-  case class Schedule2ServiceRow(assigneeId: Int, serviceId: Int, scheduleId: Int,
-    shift: Int)
-
-  lazy val flatAssignees =
-    assigneeQuery
-      .joinLeft(assignee2Service).on { case (a, a2s) => a.id === a2s.assigneeId }
-      .joinLeft(serviceQuery).on { case ((a, a2s), s) => a2s.map(_.serviceId) === s.id }
-      .map { case ((assignee, _), service) => (assignee, service) }
 
   def updateAssignee(a: Assignee): DBIO[Unit] = DBIO.seq(
     assigneeQuery.filter(_.id === a.id)
@@ -142,23 +82,16 @@ trait SlickAssigneeDb extends HasDatabaseConfigProvider[JdbcProfile] {
 
     def execute(op: AssigneeOp): DBIO[Unit] =
       op match {
-        case Add(a@Assignee(id, name, services, email)) => {
-          logger.info(s"adding $a")
-          addAssignee(a)
-        }
-        case Update(a@Assignee(id, name, services, email)) => {
-          require(id > 0)
-          logger.info(s"updating services $a with id $id")
-          updateAssignee(a)
-        }
-        case Remove(a) => {
-          logger.info(s"removing $a")
-          removeAssignee(a)
+        case Add(assignee) => addAssignee(assignee)
+        case Remove(assignee) => removeAssignee(assignee)
+        case Update(assignee) => {
+          require(assignee.id > 0)
+          updateAssignee(assignee)
         }
       }
 
     val actionPlan = calculateDifferences(previous, current)
     val actions = actionPlan.map(execute)
-    db.run(DBIO.sequence(actions))
+    db.run(DBIO.sequence(actions).transactionally)
   }
 }

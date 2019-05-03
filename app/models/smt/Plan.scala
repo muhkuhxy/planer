@@ -1,30 +1,15 @@
 package models.smt
 
-import app.Application._
-import play.api.db.slick._
-import slick.jdbc.JdbcProfile
-import slick.basic._
-import anorm._
-import anorm.SqlParser._
-import anorm.Macro.ColumnNaming
-import cats.data.NonEmptyList
-import cats.implicits._
-import com.google.inject.ImplementedBy
-import java.sql.Connection
 import java.time._
 import java.time.format._
 import java.time.temporal._
-import javax.inject._
-import java.util.Date
-import play.api.Play.current
-import play.api.db._
-import scala.language.postfixOps
-import scala.language.implicitConversions
-import scala.collection.mutable.ListBuffer
-import scala.concurrent._
-import cats.{Functor, Monad}
+
+import app.Application._
 import cats.data._
-import cats.implicits._
+import models._
+
+import scala.concurrent._
+import scala.language.{implicitConversions, postfixOps}
 
 case class Plan(id: Int, name: String, parts: List[Schedule], services: List[Service])
 case class Schedule(id: Int, date: LocalDate, unavailable: List[Int], assignments: List[Assignment])
@@ -43,48 +28,16 @@ object Indexer {
   })
 }
 
-trait SlickPlanDb extends SlickAssigneeDb with HasDatabaseConfigProvider[JdbcProfile] {
-  import profile.api._
+trait SlickPlanDb extends Tables {
   import Indexer._
-
-  class PlanTable(tag: Tag) extends Table[PlanRow](tag, "plan") {
-    def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
-    def name = column[String]("name")
-
-    def * = (id, name).mapTo[PlanRow]
-  }
-
-  case class ScheduleRow(id: Int, date: LocalDate, planId: Int)
-
-  class ScheduleTable(tag: Tag) extends Table[ScheduleRow](tag, "schedule") {
-    def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
-    def date = column[LocalDate]("day")
-    def planId = column[Int]("plan_id")
-
-    def * = (id, date, planId).mapTo[ScheduleRow]
-  }
-
-  lazy val planQuery = TableQuery[PlanTable]
-  lazy val scheduleQuery = TableQuery[ScheduleTable]
-
-  def listPlans: Future[Seq[PlanRow]] = db.run(planQuery.sortBy(_.id.desc).result)
-
-  private def getPlanRow(id: Int): DBIO[Option[PlanRow]] =
-    planQuery.filter(_.id === id).result.headOption
+  import profile.api._
 
   type DBIOpt[A] = OptionT[DBIO, A]
 
-  implicit def dbioMonad(implicit ec: ExecutionContext) = new Monad[DBIO] {
-    override def pure[A](x: A): DBIO[A] = DBIO.successful(x)
+  def listPlans: Future[Seq[PlanRow]] = db.run(planQuery.sortBy(_.id.desc).result)
 
-    override def flatMap[A, B](fa: DBIO[A])(f: (A) => DBIO[B]): DBIO[B] = fa.flatMap(f)
-
-    override def tailRecM[A, B](a: A)(f: A => DBIO[Either[A, B]]): DBIO[B] =
-      f(a).flatMap {
-        case Left(a1) => tailRecM(a1)(f)
-        case Right(b) => DBIO.successful(b)
-      }
-  }
+  def getPlanRow(id: Int): DBIO[Option[PlanRow]] =
+    planQuery.filter(_.id === id).result.headOption
 
   def getPlan(id: Int)(implicit ec: ExecutionContext): Future[Option[Plan]] = {
     db.run(
@@ -94,7 +47,7 @@ trait SlickPlanDb extends SlickAssigneeDb with HasDatabaseConfigProvider[JdbcPro
         serviceMap = services.map(s => s.id -> s).toMap
         scheduleRows <- OptionT.liftF(scheduleWithAssigneeResult(id))
         scheduleIds = scheduleRows.map { case (schedule, _, _) => schedule.id }
-        unavailabe <- OptionT.liftF(unavailableOn(scheduleIds))
+        unavailable <- OptionT.liftF(unavailableOn(scheduleIds))
       } yield {
         val schedules = scheduleRows
           .groupBy { case (schedule, _, _) => schedule }
@@ -107,7 +60,7 @@ trait SlickPlanDb extends SlickAssigneeDb with HasDatabaseConfigProvider[JdbcPro
             Schedule(
               schedule.id,
               schedule.date,
-              unavailabe.getOrElse(schedule.id, Nil).toList,
+              unavailable.getOrElse(schedule.id, Nil).toList,
               assignments.toList)
           }
           .toList
@@ -117,7 +70,7 @@ trait SlickPlanDb extends SlickAssigneeDb with HasDatabaseConfigProvider[JdbcPro
     )
   }
 
-  private def buildAssignment(
+  private[this] def buildAssignment(
     groupOfService: Seq[(ScheduleRow, Option[Schedule2ServiceRow], Option[AssigneeRow])],
     service: Service
   ): Assignment = {
@@ -132,22 +85,22 @@ trait SlickPlanDb extends SlickAssigneeDb with HasDatabaseConfigProvider[JdbcPro
     Assignment(service.id, shifts.toList)
   }
 
-  private def unavailableOn(scheduleIds: Seq[Int])(implicit ec: ExecutionContext):
+  private[this] def unavailableOn(scheduleIds: Seq[Int])(implicit ec: ExecutionContext):
     DBIO[Map[Int, Seq[Int]]] =
     unavailableQuery.filter(_.scheduleId inSet scheduleIds).result.map { indexByFirst }
 
   type FlatScheduleRow = (ScheduleRow, Option[Schedule2ServiceRow], Option[AssigneeRow])
 
-  private def scheduleWithAssigneeQuery(planId: Int) =
+  private[this] def scheduleWithAssigneeQuery(planId: Int) =
     scheduleQuery.filter(_.planId === planId)
       .joinLeft(schedule2Service).on { case (schedule, s2s) => schedule.id === s2s.scheduleId }
       .joinLeft(assigneeQuery).on { case ((_, s2s), a) => s2s.map(_.assigneeId) === a.id }
       .map { case ((schedule, s2s), assignee) => (schedule, s2s, assignee) }
 
-  private def scheduleWithAssigneeResult(planId: Int): DBIO[Seq[FlatScheduleRow]] =
+  private[this] def scheduleWithAssigneeResult(planId: Int): DBIO[Seq[FlatScheduleRow]] =
     scheduleWithAssigneeQuery(planId).result
 
-  private def deleteScheduleRefs(scheduleId: Int): DBIO[(Int, Int)] =
+  private[this] def deleteScheduleRefs(scheduleId: Int): DBIO[(Int, Int)] =
     unavailableQuery.filter(_.scheduleId === scheduleId).delete zip
       schedule2Service.filter(_.scheduleId === scheduleId).delete
 
@@ -171,12 +124,14 @@ trait SlickPlanDb extends SlickAssigneeDb with HasDatabaseConfigProvider[JdbcPro
 
   def removePlan(id: Int)(implicit ec: ExecutionContext): Future[Unit] = {
     db.run {
-      (for {
-        scheduleIds <- scheduleQuery.filter(_.planId === id).map(_.id).result
-        _ <- DBIO.sequence(scheduleIds.map(deleteScheduleRefs(_)))
-        _ <- scheduleQuery.filter(_.planId === id).delete
-        _ <- planQuery.filter(_.id === id).delete
-      } yield ()).transactionally
+      {
+        for {
+          scheduleIds <- scheduleQuery.filter(_.planId === id).map(_.id).result
+          _ <- DBIO.sequence(scheduleIds.map(deleteScheduleRefs))
+          _ <- scheduleQuery.filter(_.planId === id).delete
+          _ <- planQuery.filter(_.id === id).delete
+        } yield ()
+      }.transactionally
     }
   }
 
@@ -194,9 +149,9 @@ trait SlickPlanDb extends SlickAssigneeDb with HasDatabaseConfigProvider[JdbcPro
     }
   }
 
-  val dateFormat = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+  private[this] val dateFormat = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
-  private def daysBetween(from: LocalDate, to: LocalDate, weekDays: Seq[DayOfWeek]):
+  private[this] def daysBetween(from: LocalDate, to: LocalDate, weekDays: Seq[DayOfWeek]):
     Stream[LocalDate] = {
     lazy val loopingWeekdays: Stream[DayOfWeek] = weekDays.toStream #::: loopingWeekdays
 

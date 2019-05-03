@@ -1,16 +1,15 @@
 package services
 
-import app.Application._
+import java.time.LocalDate
+
 import cats.data._
 import cats.implicits._
-import models.smt._
-import scala.concurrent._
-import java.time.LocalDate
 import javax.inject._
-import models.DomainError._
+import models.domainError._
+import models.smt._
 import play.api.db.slick._
-import slick.basic._
-import slick.jdbc.JdbcProfile
+
+import scala.concurrent._
 
 class PlanService @Inject()
   (val dbConfigProvider: DatabaseConfigProvider)

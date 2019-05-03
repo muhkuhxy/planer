@@ -1,18 +1,16 @@
 package controllers.smt
 
-import app.Application._
-import cats.data._
+import app.either._
+import app.parsers._
+import app.results._
 import cats.implicits._
 import controllers._
-import play.api.db.slick._
-import play.api.mvc._
-import play.api.Logger
-import play.api.libs.json._
-import play.api.libs.functional.syntax._
-import slick.basic._
-import slick.jdbc.JdbcProfile
-import models.smt._
 import javax.inject._
+import models.smt._
+import play.api.db.slick._
+import play.api.libs.json._
+import play.api.mvc._
+
 import scala.concurrent._
 
 class AssigneeController @Inject()(

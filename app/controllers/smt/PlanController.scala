@@ -1,16 +1,21 @@
 package controllers.smt
 
+import java.time.LocalDate
+
 import app.Application._
-import cats.data._
+import app.either._
+import app.parsers._
+import app.results._
+import cats.data.EitherT
 import cats.implicits._
 import controllers._
-import java.time.LocalDate
 import javax.inject._
-import play.api.mvc._
-import play.api.libs.json._
-import play.api.libs.functional.syntax._
+import models.domainError._
 import models.smt._
+import play.api.libs.json._
+import play.api.mvc._
 import services.PlanService
+
 import scala.concurrent._
 
 object PlanController {
