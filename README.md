@@ -1,35 +1,19 @@
 # planer
 
-Play! 2.4 / Scala web application for assigning volunteers to services.
-Featuring funny German/English mixed language sourcecode, mostly no JS libs (except moment.js) and more.
+Scala web application for assigning volunteers to services and generally trying out new stuff.
 
-# frontend
+Deployed to heroku.
 
-> A Vue.js project
+# Quick Start
 
-## Build Setup
+For local development run (in two terminals, ensuring docker daemon is running):
 
-``` bash
-# install dependencies
-npm install
-
-# serve with hot reload at localhost:8080
-npm run dev
-
-# build for production with minification
-npm run build
-
-# build for production and view the bundle analyzer report
-npm run build --report
-
-# run unit tests
-npm run unit
-
-# run e2e tests
-npm run e2e
-
-# run all tests
-npm test
+```
+> vagrant up
+> sbt run
+> npm start
 ```
 
-For a detailed explanation on how things work, check out the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).
+Server is running at localhost:9000, serving the last frontend built with npm build.
+
+Frontend with hot code replacement etc. runs at localhost:8080.
