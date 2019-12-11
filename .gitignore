@@ -10,8 +10,7 @@ dist
 .idea
 .vagrant
 node_modules
-/public/index.html
-/public/static
+/public/frontend
 
 # frontend
 .DS_Store

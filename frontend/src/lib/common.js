@@ -40,6 +40,7 @@ export function req (method, url, data) {
     if (data) {
       json = JSON.stringify(data)
       if (json && json.length > 1100) {
+        // eslint-disable-next-line no-console
         console.log('request may fail due to too much data!')
       }
     }
