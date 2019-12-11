@@ -1,10 +1,14 @@
 <script>
-import {mapState} from 'vuex'
+import { mapState } from 'vuex'
 import moment from 'moment'
 import get from 'lodash/get'
+import ToggleButton from 'vue-js-toggle-button'
 
 export default {
   props: ['assignment'],
+  components: {
+    ToggleButton
+  },
   methods: {
     name (serviceName, slot) {
       return get(this.assignment, [serviceName, slot, 'name'])

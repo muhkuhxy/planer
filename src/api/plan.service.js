@@ -1,4 +1,4 @@
-import {req} from '../lib/common'
+import { req } from '../lib/common'
 
 export default {
   getPlan (id, assignees) {
@@ -9,8 +9,8 @@ export default {
     return req.get('/api/plan/' + id).then(response => {
       let plan = JSON.parse(response.responseText)
       plan.parts = plan.parts.map(p => {
-        let {id, date, serviceweek, unavailable} = p
-        let part = {id, date, serviceweek, unavailable}
+        let { id, date, serviceweek, unavailable } = p
+        let part = { id, date, serviceweek, unavailable }
         plan.services.forEach(service => {
           let assignment = p.assignments.find(elem => elem.s === service.id)
           let shifts = assignment ? assignment.shifts || [] : []

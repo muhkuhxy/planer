@@ -1,7 +1,7 @@
 <script>
-import {$, $$} from '../lib/common'
+import { $, $$ } from '../lib/common'
 import Assignee from './Assignee.vue'
-import {mapState} from 'vuex'
+import { mapState } from 'vuex'
 
 export default {
   props: ['assignees'],
@@ -75,7 +75,7 @@ export default {
     <div class="col-xs-12 flex">
       <h2>Helfer</h2>
       <ul class="draggable">
-        <li v-for="assignee in assignees">
+        <li v-for="assignee in assignees" :key="assignee.id">
           <Assignee :ae="assignee"/>
         </li>
       </ul>

@@ -1,5 +1,5 @@
 import service from '../api/plan.service'
-import {handleUnauthorized} from '../lib/appHelpers'
+import { handleUnauthorized } from '../lib/appHelpers'
 
 export default {
   async loadPlan ({ commit }, id) {

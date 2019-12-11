@@ -1,5 +1,5 @@
 <script>
-import {mapState} from 'vuex'
+import { mapState } from 'vuex'
 
 export default {
   props: ['ae'],
@@ -29,7 +29,7 @@ export default {
     <input class="pull-right" :disabled="classObject.assigned" @change="unavailable" :checked="classObject.disabled" type="checkbox">
     <div class="dienste">
       <div class="counter pull-left">{{ ae.timesAssigned }}</div>
-      <span :class="serviceName(s)" v-for="s in ae.services">{{ serviceName(s)[0] }}</span>
+      <span :class="serviceName(s)" v-for="s in ae.services" :key="s.id">{{ serviceName(s)[0] }}</span>
     </div>
   </div>
 </template>

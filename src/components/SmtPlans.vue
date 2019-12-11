@@ -1,7 +1,7 @@
 <script>
 import service from '../api/plan.service'
-import {req} from '../lib/common'
-import {handleUnauthorized} from '../lib/appHelpers'
+import { req } from '../lib/common'
+import { handleUnauthorized } from '../lib/appHelpers'
 import moment from 'moment'
 import Datepicker from 'vue-datepicker-local'
 import Spinner from 'vue-simple-spinner'
@@ -88,7 +88,7 @@ export default {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="plan in plans">
+        <tr v-for="plan in plans" :key="plan.id">
           <td>{{ plan.name }}</td>
           <td class="text-right">
             <router-link class="btn btn-xs btn-default" :to="{ name: 'plan', params: { id: plan.id } }">

@@ -3,7 +3,7 @@ import Vue from 'vue'
 import service from '../api/plan.service'
 import StatusIndicator from './StatusIndicator'
 import Spinner from 'vue-simple-spinner'
-import {mapState} from 'vuex'
+import { mapState } from 'vuex'
 import cloneDeep from 'lodash/cloneDeep'
 
 export default {
@@ -101,12 +101,12 @@ export default {
             </tr>
           </thead>
           <tbody>
-            <tr class="helper" v-for="assignee in assigneeVm">
+            <tr class="helper" v-for="assignee in assigneeVm" :key="assignee.id">
               <td class="name" v-if="assignee.editing"><input type="text" v-model="assignee.name"></td>
               <td class="name" v-else>{{ assignee.name }}</td>
               <td class="email" v-if="assignee.editing"><input type="text" v-model="assignee.email"></td>
               <td class="email" v-else>{{ assignee.email }}</td>
-              <td v-for="service in services">
+              <td v-for="service in services" :key="service.id">
                 <input type="checkbox" :checked="hasService(assignee, service.id)" @change="toggleService(assignee, service.id)">
               </td>
               <td>

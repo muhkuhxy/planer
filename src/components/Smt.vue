@@ -3,7 +3,7 @@ import SmtTable from './SmtTable'
 import StatusIndicator from './StatusIndicator'
 import SmtAssignees from './SmtAssignees'
 import service from '../api/plan.service'
-import {mapState} from 'vuex'
+import { mapState } from 'vuex'
 import moment from 'moment'
 import Spinner from 'vue-simple-spinner'
 

@@ -1,9 +1,8 @@
 <script>
-import Smt from './components/Smt'
 import AppNav from './components/AppNav'
 
 export default {
-  components: { Smt, AppNav }
+  components: { AppNav }
 }
 </script>
 

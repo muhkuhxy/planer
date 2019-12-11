@@ -1,5 +1,5 @@
 <script>
-import {req} from '../lib/common'
+import { req } from '../lib/common'
 
 export default {
   data () {

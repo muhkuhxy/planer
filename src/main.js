@@ -1,9 +1,8 @@
 import Vue from 'vue'
 import moment from 'moment'
-import store from './store'
+import App from './App.vue'
 import router from './router'
-import App from './App'
-import ToggleButton from 'vue-js-toggle-button'
+import store from './store'
 
 Vue.config.productionTip = false
 
@@ -17,12 +16,8 @@ Vue.filter('dateLong', function (value) {
   return moment(value).format('dddd, DD.MM.YYYY')
 })
 
-Vue.use(ToggleButton)
-
-// eslint-disable-next-line no-new
 new Vue({
-  el: '#app',
   router,
   store,
   render: h => h(App)
-})
+}).$mount('#app')
