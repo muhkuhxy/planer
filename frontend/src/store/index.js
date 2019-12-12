@@ -5,6 +5,15 @@ import actions from './actions'
 
 Vue.use(Vuex)
 
+const getters = {
+  servicesByName (state) {
+    return state.services && state.services.reduce((map, service) => {
+      map[service.name] = service
+      return map
+    }, {})
+  }
+}
+
 export default new Vuex.Store({
   state: {
     user: '',
@@ -16,5 +25,6 @@ export default new Vuex.Store({
   },
   mutations,
   actions,
+  getters,
   strict: process.env.NODE_ENV !== 'production'
 })
