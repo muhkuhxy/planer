@@ -3,7 +3,7 @@ import Vue from 'vue'
 import service from '../api/plan.service'
 import StatusIndicator from './StatusIndicator'
 import Spinner from 'vue-simple-spinner'
-import {mapState} from 'vuex'
+import { mapState, mapGetters } from 'vuex'
 import cloneDeep from 'lodash/cloneDeep'
 
 export default {
@@ -19,19 +19,19 @@ export default {
     this.load()
   },
   computed: {
-    ...mapState(['assignees', 'services'])
+    ...mapState(['assignees', 'services']),
+    ...mapGetters(['servicesByName'])
   },
   methods: {
-    load () {
+    async load () {
       this.loading = true
-      this.$store.dispatch('loadAssignees')
-        .then(_ => {
-          this.assigneeVm = cloneDeep(this.assignees)
-          this.assigneeVm.forEach(_ => Vue.set(_, 'editing', false))
-        })
-        .finally(_ => {
-          this.loading = false
-        })
+      try {
+        await this.$store.dispatch('loadAssignees')
+        this.assigneeVm = cloneDeep(this.assignees)
+        this.assigneeVm.forEach(_ => Vue.set(_, 'editing', false))
+      } finally {
+        this.loading = false
+      }
     },
     hasService (assignee, serviceId) {
       return assignee.services.includes(serviceId)
@@ -65,7 +65,8 @@ export default {
         this.saveState = result.status === 200 ? 'success' : 'error'
       } catch (e) {
         this.saveState = 'error'
-        console.log(e)
+        // eslint-disable-next-line no-console
+        console.error(e)
       }
     }
   },
@@ -106,8 +107,14 @@ export default {
               <td class="name" v-else>{{ assignee.name }}</td>
               <td class="email" v-if="assignee.editing"><input type="text" v-model="assignee.email"></td>
               <td class="email" v-else>{{ assignee.email }}</td>
-              <td v-for="service in services">
-                <input type="checkbox" :checked="hasService(assignee, service.id)" @change="toggleService(assignee, service.id)">
+              <td>
+                <input type="checkbox" :checked="hasService(assignee, servicesByName['sicherheit'].id)" @change="toggleService(assignee, servicesByName['sicherheit'].id)">
+              </td>
+              <td>
+                <input type="checkbox" :checked="hasService(assignee, servicesByName['mikro'].id)" @change="toggleService(assignee, servicesByName['mikro'].id)">
+              </td>
+              <td>
+                <input type="checkbox" :checked="hasService(assignee, servicesByName['tonanlage'].id)" @change="toggleService(assignee, servicesByName['tonanlage'].id)">
               </td>
               <td>
                 <button class="btn btn-xs btn-default" type="button" @click="assignee.editing = !assignee.editing">
