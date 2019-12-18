@@ -17,6 +17,5 @@ PUT    /api/assignees controllers.smt.AssigneeController.save
 
 GET    /api/service   controllers.smt.AssigneeController.listServices
 
-GET    /              controllers.Assets.at(path="/public/frontend", file="index.html")
-GET    /frontend/*file controllers.Assets.at(path="/public/frontend", file)
-GET    /*file         controllers.Assets.at(path="/public", file)
+GET    /              controllers.Assets.at(path="/public/static", file="index.html")
+GET    /*file         controllers.Assets.at(path="/public/static", file)

@@ -1,6 +1,5 @@
 module.exports = {
-  publicPath: process.env.NODE_ENV === 'production' ? '/frontend' : '/',
-  outputDir: '../public/frontend',
+  outputDir: 'public/static',
   devServer: {
     proxy: 'http://localhost:9000'
   }
