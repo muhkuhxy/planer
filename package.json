@@ -8,6 +8,9 @@
     "test:unit": "vue-cli-service test:unit",
     "lint": "vue-cli-service lint"
   },
+  "engines": {
+     "node": "^13.x"
+  },
   "dependencies": {
     "bootstrap-sass": "^3.4.1",
     "core-js": "^3.4.3",
